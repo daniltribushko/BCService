@@ -1,0 +1,95 @@
+openapi: 3.1.0
+info:
+  title: User-service
+  description: Сервис для работы с пользователями
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8001'
+tags:
+  - name: Authorization
+    description: Авторизация и регистрация пользователей
+paths:
+  /users/sign-up:
+    post:
+      summary: SignUp
+      description: Регистрация нового пользователя
+      tags:
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUp"
+      responses:
+        '201':
+          description: Пользователь зарегестрирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtTokenDto'
+  /users/sign-in:
+    post:
+      summary: SignIn
+      description: Авторизация нового пользователя
+      tags:
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignIn'
+      responses:
+        '200':
+          description: Пользователь авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtTokenDto'
+components:
+  schemas:
+    SignUp:
+      type: object
+      required:
+        - chatId
+        - username
+        - birthday
+      properties:
+        chatId:
+          type: integer
+          format: int64
+          example: 1
+          description: Идентификатор пользователя в телеграмме
+        username:
+          type: string
+          example: example_user
+          description: Имя пользователя в телеграмме
+        birthday:
+          type: string
+          format: date
+          description: Дата рождения пользователя
+    SignIn:
+      type: object
+      required:
+        - chatId
+        - username
+      properties:
+        chatId:
+          type: integer
+          format: int64
+          example: 1
+          description: Идентификатор пользователя в телеграмме
+        username:
+          type: string
+          example: example_user
+          description: Имя пользователя в телеграмме
+    JwtTokenDto:
+      type: object
+      required:
+        jwt
+      properties:
+        jwt:
+          type: string
+          example: test_token
+          description: Jwt токен пользователя

@@ -1,0 +1,43 @@
+services:
+  gateway:
+    container_name: bc-gateway
+    image: daniltribushko26/bc_gateway:0.0.1
+    ports:
+      - '8000:8000'
+    environment:
+      - SERVER_URL=bc-gateway
+      - USER_TARGET_HOST=bc-user-service
+      - USER_TARGET_PORT=8001
+  user-service:
+    container_name: bc-user-service
+    image: daniltribushko26/bc_user_service:0.0.1
+    depends_on:
+      user_service_db:
+        condition: service_healthy
+    ports:
+      - '8001:8001'
+    environment:
+      - DB_URL=jdbc:postgresql://user_service_db:5432/bc_user_db
+      - DB_USER=root
+      - DB_PASSWORD=123
+      - SERVER_URL=bc-user-service
+  user_service_db:
+    container_name: bc_user_service_db
+    image: postgres:17
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/pgdata
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=123
+      - POSTGRES_DB=bc_user_db
+      - POSTGRES_PORT=5432
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U root -d bc_user_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+volumes:
+  postgres_data:
