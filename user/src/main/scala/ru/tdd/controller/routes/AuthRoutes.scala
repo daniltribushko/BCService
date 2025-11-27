@@ -27,9 +27,7 @@ object AuthRoutes {
               body <- req.body.asString
               dto <- ZIO.fromEither(body.fromJson[SignUpDto])
                 .mapError(BadRequestException(_))
-              token <- ZIO.fromFuture { implicit ec =>
-                authService.signUp(dto)
-              }.mapError(identity)
+              token <- authService.signUp(dto)
             } yield Response.json(token.toJson).status(Status.Created)).catchAll {
               case apiEx: ApiException =>
                 ZIO.succeed(Response.json(ExceptionDto(apiEx).toJson).status(apiEx.statusCode))
@@ -44,9 +42,7 @@ object AuthRoutes {
               body <- req.body.asString
               dto <- ZIO.fromEither(body.fromJson[SignInDto])
                 .mapError(BadRequestException(_))
-              token <- ZIO.fromFuture { implicit ec =>
-                authService.signIn(dto)
-              }.mapError(identity)
+              token <- authService.signIn(dto)
             } yield Response.json(token.toJson).status(Status.Ok)).catchAll {
               case apiEx: ApiException =>
                 ZIO.succeed(Response.json(ExceptionDto(apiEx).toJson).status(apiEx.statusCode))

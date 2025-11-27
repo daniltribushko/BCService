@@ -54,3 +54,12 @@ case class AlreadyExistException(
                                   override val message: String,
                                   override val timestamp: LocalDateTime = NOW_TIME
                                 ) extends ApiException(Conflict, message, timestamp)
+
+/**
+ * @author Tribushko Danil
+ * @since 20.11.2025
+ */
+case class AuthorizationException(
+                                   override val message: String,
+                                   override val timestamp: LocalDateTime = NOW_TIME
+                                 ) extends ApiException(Status.Unauthorized, message, timestamp)

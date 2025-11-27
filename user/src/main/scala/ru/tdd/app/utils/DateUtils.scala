@@ -10,22 +10,26 @@ import java.util.Date
  */
 trait DateUtils {
 
-  val Second = 1000
+  val Second: Int = 1000
 
-  val Minute = Second * 60
+  val Minute: Int = Second * 60
 
-  val Hour = Minute * 60
+  val Hour: Int = Minute * 60
 
-  val Day = Hour * 24
+  val Day: Int = Hour * 24
 
-  val NOW = new Date()
+  val NOW: Date = new Date()
 
-  val NOW_TIME = LocalDateTime.now()
+  val NOW_TIME: LocalDateTime = LocalDateTime.now()
 
-  val NOW_DATE = LocalDate.now()
+  val NOW_DATE: LocalDate = LocalDate.now()
 
   implicit class DateOps(date: Date) {
 
     def +(time: Long) = new Date(date.getTime + time)
+
+    def <(value: Date): Boolean = date.before(value)
+
+    def >(value: Date): Boolean = date.after(value)
   }
 }

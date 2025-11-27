@@ -22,6 +22,9 @@ trait JwtService {
   /** Получение данных из токена */
   def parseToken(token: String): Claims
 
+  /** Валидация токена */
+  def validateToken(token: String): Boolean
+
   protected val secretKey: SecretKey
 }
 
@@ -31,22 +34,27 @@ trait JwtService {
  */
 class JwtServiceImp(conf: JwtConfig) extends JwtService {
 
-  override def createToken(user: AppUser): String =
+  override final def createToken(user: AppUser): String =
     Jwts.builder()
       .subject(user.username)
       .issuedAt(NOW)
       .expiration(NOW + Day)
-      .claims(Map("roles" -> user.roles, "chatId" -> user.chatId).asJava)
+      .claims(Map("chatId" -> user.chatId, "id" -> user.id).asJava)
       .signWith(secretKey)
       .compact()
 
-  override def parseToken(token: String): Claims =
+  override final def parseToken(token: String): Claims =
     Jwts.parser()
       .verifyWith(secretKey)
       .build()
       .parseSignedClaims(token)
       .getPayload
 
-  protected val secretKey: SecretKey =
+  protected final val secretKey: SecretKey =
     Keys.hmacShaKeyFor(Decoders.BASE64.decode(conf.secret))
+
+  override final def validateToken(token: String): Boolean = {
+    val claims = parseToken(token)
+    claims.getExpiration > NOW
+  }
 }

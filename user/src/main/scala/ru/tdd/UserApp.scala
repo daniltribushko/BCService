@@ -2,7 +2,7 @@ package ru.tdd
 
 import org.flywaydb.core.Flyway
 import ru.tdd.controller.configs.AppConfig
-import ru.tdd.controller.routes.AuthRoutes
+import ru.tdd.controller.routes.{AuthRoutes, UserRoutes}
 import ru.tdd.database.entities.users.AppUserEntity
 import slick.jdbc.PostgresProfile.api._
 import zio.http.Server
@@ -38,7 +38,7 @@ object UserApp extends ZIOAppDefault {
     (for {
       _ <- ZIO.fromFuture(implicit ec => db.run(AppUserEntity.entities.schema.createIfNotExists))
       _ <- ZIO.fromFuture(implicit ec => Future {flywayAction.migrate()})
-      _ <- Server.serve(AuthRoutes(db, config.jwt))
+      _ <- Server.serve(AuthRoutes(db, config.jwt) ++ UserRoutes(db, config.jwt))
     } yield ())
       .provide(
         ZLayer.succeed(Server.Config.default.binding(config.server.url, config.server.port)),

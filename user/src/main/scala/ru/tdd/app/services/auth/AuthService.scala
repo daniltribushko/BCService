@@ -8,9 +8,10 @@ import ru.tdd.controller.configs.JwtConfig
 import ru.tdd.database.entities.users.AppUser
 import ru.tdd.database.repositories.users.SlickUserRepository
 import slick.jdbc.PostgresProfile.api._
+import zio.ZIO
 
 import java.util.UUID
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * @author Tribushko Danil
@@ -19,9 +20,9 @@ import scala.concurrent.Future
  */
 trait AuthService {
 
-  def signIn(dto: SignInDto): Future[JwtTokenDto]
+  def signIn(dto: SignInDto): ZIO[Any, Throwable, JwtTokenDto]
 
-  def signUp(dto: SignUpDto): Future[JwtTokenDto]
+  def signUp(dto: SignUpDto): ZIO[Any, Throwable, JwtTokenDto]
 }
 
 /**
@@ -34,36 +35,21 @@ class AuthServiceImp(db: Database, conf: JwtConfig) extends AuthService {
 
   private val jwtService = new JwtServiceImp(conf)
 
-  override def signIn(dto: SignInDto): Future[JwtTokenDto] = {
-    import scala.concurrent.ExecutionContext
-
-    implicit val ec: ExecutionContext = ExecutionContext.global
+  override def signIn(dto: SignInDto): ZIO[Any, Throwable, JwtTokenDto] = {
 
     for {
-      userOpt <- rep.findOne(u => u.username === dto.username && u.chatId === dto.chatId)
-    } yield {
-      userOpt match {
-        case Some(user) => JwtTokenDto(jwtService.createToken(user))
-        case _ => throw NotFoundException("Пользователь не найден")
-      }
-    }
+      userOpt <-ZIO.fromFuture(implicit ex => rep.findOne(u => u.username === dto.username && u.chatId === dto.chatId))
+      user <- ZIO.fromOption(userOpt).mapError(_ => NotFoundException("Пользователь не найден"))
+    } yield JwtTokenDto(jwtService.createToken(user))
   }
 
-  override def signUp(dto: SignUpDto): Future[JwtTokenDto] = {
-    import scala.concurrent.ExecutionContext
-
-    implicit val ec: ExecutionContext = ExecutionContext.global
+  override def signUp(dto: SignUpDto): ZIO[Any, Throwable, JwtTokenDto] = {
 
     for {
-      isExist <- rep.existsByUsernameAndChatId(dto.username, dto.chatId)
-    } yield {
-      if (!isExist) {
-        val newUser = AppUser(UUID.randomUUID(), dto.username, dto.chatId, NOW_TIME, NOW_TIME, Seq(User), dto.birthday)
-        rep.save(newUser)
-        JwtTokenDto(jwtService.createToken(newUser))
-      } else {
-        throw AlreadyExistException("Пользователь уже создан")
-      }
-    }
+      isExist <- ZIO.fromFuture(_ => rep.existsByUsernameAndChatId(dto.username, dto.chatId))
+      _ <- ZIO.when(isExist)(ZIO.fail(AlreadyExistException("Пользователь уже создан")))
+      newUser = AppUser(UUID.randomUUID(), dto.username, dto.chatId, NOW_TIME, NOW_TIME, Seq(User), dto.birthday)
+      _ <- ZIO.fromFuture(_ => rep.save(newUser))
+    } yield JwtTokenDto(jwtService.createToken(newUser))
   }
 }
