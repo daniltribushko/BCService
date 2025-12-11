@@ -8,11 +8,16 @@ servers:
 tags:
   - name: Authorization
     description: Авторизация и регистрация пользователей
+  - name: User
+    description: Работа с пользователями системы
+security:
+  - BearerAuth: [ ]
 paths:
   /users/sign-up:
     post:
       summary: SignUp
       description: Регистрация нового пользователя
+      security: [ ]
       tags:
         - Authorization
       requestBody:
@@ -32,6 +37,7 @@ paths:
     post:
       summary: SignIn
       description: Авторизация нового пользователя
+      security: [ ]
       tags:
         - Authorization
       requestBody:
@@ -47,7 +53,161 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JwtTokenDto'
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    put:
+      summary: Update
+      description: Обновление пользователя
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserDto'
+      responses:
+        '200':
+          description: Пользователь успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+        '403':
+          description: Пользователь пытается изменить другого пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionDto'
+        '404':
+          description: Пользователь с указанным идентификатором не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionDto'
+        '409':
+          description: Пользователь с указанным идентификатором уже создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionDto'
+    delete:
+      summary: Delete
+      description: Удаление пользователя
+      tags:
+        - User
+      responses:
+        '204':
+          description: Пользователь успешно удален
+        '403':
+          description: Пользователь пытается удалить другого пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionDto'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionDto'
+    get:
+      summary: Get by Id
+      description: Получение пользователя с указанным идентификатором
+      tags:
+        - User
+      responses:
+        '200':
+          description: Пользователь получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionDto'
+  /users:
+    get:
+      summary: Find All
+      description: Получить всех пользователей
+      tags:
+        - User
+      responses: 
+        '200':
+          description: Пользователи получены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsersDto'
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        Введите JWT-токен
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+        description: Идентификатор пользователя
+    Username:
+      name: username
+      in: query
+      schema:
+        type: string
+        description: Имя пользователя
+    BirthdayStart:
+      name: birthday-start
+      in: query
+      schema:
+        type: string
+        format: date
+        description: Минимальная дата рождения пользователя
+    BirthdayEnd:
+      name: birthday-end
+      in: query
+      schema:
+        type: string
+        format: date
+        description: Максимальная дата рождения пользователя
+    CreationTimeStart:
+      name: creation-time-start
+      in: query
+      schema: 
+        type: string
+        format: date
+        description: Минимальное время создания пользователя
+    CreationTimeEnd:
+      name: creation-time-end
+      in: query
+      schema: 
+        type: string
+        format: date-time
+        description: Максимальное время создания пользователя
+    UpdateTimeStart:
+      name: update-time-start
+      in: query
+      schema: 
+        type: string
+        format: date-time
+        description: Минимальное время обновления пользователя
+    UpdateTimeEnd:
+      name: update-time-end
+      in: query
+      schema: 
+        type: string
+        format: date-time
+        description: Максимальное время обновления пользователя
   schemas:
     SignUp:
       type: object
@@ -93,3 +253,66 @@ components:
           type: string
           example: test_token
           description: Jwt токен пользователя
+    UserDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор пользователя
+        username:
+          type: string
+          description: Имя пользователя
+        chatId:
+          type: integer
+          format: int64
+          description: Идентификатор пользователя в телеграмме
+        birthday:
+          type: string
+          format: date
+          description: Дата рождения пользователя
+        creationTome:
+          type: string
+          format: date-time
+          description: Время создания пользователя
+        updateTime:
+          type: string
+          format: date-time
+          description: Время обновления пользователя
+        roles:
+          type: array
+          items:
+            type: object
+          description:
+            Роли пользователя
+    UsersDto:
+      type: array
+      items:
+        type: object
+        $ref: '#/components/schemas/UserDto'
+    UpdateUserDto:
+      type: object
+      properties:
+        username:
+          type: string
+          example: user
+          description: Имя пользователя
+        birthday:
+          type: string
+          format: date
+          example: 2000-01-01
+          description: Дата рождения пользователя
+    ExceptionDto:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          format: int32
+          description: Код ошибки
+        message:
+          type: string
+          description: Текст ошибки
+        timestamp:
+          type: string
+          format: date-time
+          description: Время ошибки

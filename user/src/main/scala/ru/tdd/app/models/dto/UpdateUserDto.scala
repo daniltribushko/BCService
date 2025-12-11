@@ -12,9 +12,8 @@ import java.util.UUID
  * Dto запроса для обновления пользователя
  */
 case class UpdateUserDto(
-                          chatId: Long,
-                          username: String,
-                          birthday: LocalDate
+                          username: Option[String],
+                          birthday: Option[LocalDate]
                         )
 
 object UpdateUserDto {

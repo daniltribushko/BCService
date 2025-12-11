@@ -64,19 +64,21 @@ class UserServiceImp(db: Database) extends UserService {
     for {
       userOpt <- ZIO.fromFuture(implicit ex => rep.findById(userId))
       user <- ZIO.fromOption(userOpt).mapError(_ => NotFoundException("Пользователь с указанным идентификатором не найден"))
-      _ <- ZIO.when(user.username != dto.username) {
-        ZIO.fromFuture(_ => rep.exists(_.username === dto.username)).flatMap {
+      _ <- ZIO.when(dto.username.isDefined && user.username != dto.username.get) {
+        ZIO.fromFuture(_ => rep.exists(_.username === dto.username.get)).flatMap {
           case true => ZIO.fail(AlreadyExistException("Пользователь с указанным именем телеграмма уже создан"))
           case false => ZIO.unit
         }
       }
-      _ <- ZIO.when(user.chatId != dto.chatId) {
-        ZIO.fromFuture(_ => rep.exists(_.chatId === dto.chatId)).flatMap {
-          case true => ZIO.fail(AlreadyExistException("Пользователь с указанным идентификатором телеграмма уже создан"))
-          case false => ZIO.unit
-        }
-      }
-      newUser = AppUser(userId, dto.username, dto.chatId, user.creationTime, NOW_TIME, user.roles, dto.birthday)
+      newUser = AppUser(
+        userId,
+        dto.username.getOrElse(user.username),
+        user.chatId,
+        user.creationTime,
+        NOW_TIME,
+        user.roles,
+        dto.birthday.getOrElse(user.birthday)
+      )
       _ <- ZIO.fromFuture(
         _ => rep.update(newUser)
       )
@@ -103,7 +105,7 @@ class UserServiceImp(db: Database) extends UserService {
                       ): ZIOUserDTOS =
     ZIO.fromFuture(implicit ex =>
       rep.findAll(u =>
-        usernameOpt.fold(true.bind)(username => u.username === username) &&
+        usernameOpt.fold(true.bind)(username => u.username like  username) &&
           birthdayStartOpt.fold(true.bind)(date => u.birthday >= date) &&
           birthdayEndOpt.fold(true.bind)(date => u.birthday <= date) &&
           creationTimeStartOpt.fold(true.bind)(date => u.creationTime >= date) &&
