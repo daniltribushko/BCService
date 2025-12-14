@@ -10,7 +10,7 @@ import ru.tdd.controller.routes.RoutesHandlers._
 import ru.tdd.controller.security.Principal
 import slick.jdbc.PostgresProfile.api._
 import zio.ZIO
-import zio.http.{Method, Request, Response, Routes, Status, handler, uuid, withContext}
+import zio.http.{Method, Request, Response, Routes, Status, handler, long, uuid, withContext}
 import zio.json._
 
 import java.time.{LocalDate, LocalDateTime}
@@ -102,7 +102,38 @@ object UserRoutes {
               case ex: ApiException => ZIO.fail(Response.json(ExceptionDto(ex).toJson).status(ex.statusCode))
             }
           }
+        },
+      Method.GET / "users" ->
+        handler {
+          req: Request =>
+            withContext { _: Principal =>
+              req.query[Long]("chat-id") match {
+                case Right(chatId) =>
+                  service.getByChatId(chatId).map(dto => Response.json(dto.toJson).status(Status.Ok)).catchAll(ex =>
+                    ZIO.succeed(Response.text(ex.getMessage).status(Status.BadRequest))
+                  )
+                case Left(_) =>
+                  ZIO.succeed(Response.badRequest)
+              }
+            }
         }
-    ) @@ jwtAuthHandler(db, conf, Seq(Role.User))
+    ) @@ jwtAuthHandler(db, conf, Seq(Role.User)) ++ Routes(
+      Method.GET / "users" / long("chat-id") / "exists" ->
+        handler {
+          (chatId: Long, _: Request) =>
+            service.isUserExistByChatId(chatId).map(dto => Response.json(dto.toJson).status(Status.Ok)).catchAll(ex =>
+              ZIO.succeed(Response.text(ex.getMessage).status(Status.BadRequest)))
+        },
+      Method.GET / "users" / "exists" ->
+        handler {
+          req: Request =>
+            req.queryParam("username").map { username =>
+              service.isUserExistByUsername(username).map(dto => Response.json(dto.toJson).status(Status.Ok)).catchAll(ex =>
+                ZIO.succeed(Response.text(ex.getMessage).status(Status.BadRequest)))
+            }.getOrElse {
+              ZIO.succeed(Response.status(Status.NotFound))
+            }
+        }
+    )
   }
 }

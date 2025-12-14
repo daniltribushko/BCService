@@ -1,0 +1,44 @@
+package ru.tdd.telegram_bot.app.utils;
+
+/**
+ * @author Tribushk Danil
+ * @since 20.12.2025
+ * Утилиты для работы с url
+ */
+public class URLUtils {
+
+    public static URLBuilder builder(String url) {
+        return new URLBuilder(url);
+    }
+
+    /** Класс для построки строки url адреса */
+    public static class URLBuilder {
+
+        private final StringBuilder url;
+
+        public URLBuilder(String url) {
+            this.url = new StringBuilder(url);
+        }
+
+        public URLBuilder addPathPart(Object pathPart) {
+            url.append("/").append(pathPart);
+            return this;
+        }
+
+        public URLBuilder addQueryParameter(String key, Object value) {
+            if (!url.toString().contains("?")) {
+                url.append("?");
+            } else {
+                url.append("&");
+            }
+
+            url.append(key).append("=").append(value);
+
+            return this;
+        }
+
+        public String build() {
+            return url.toString();
+        }
+    }
+}

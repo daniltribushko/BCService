@@ -1,6 +1,6 @@
 package ru.tdd.app.services.auth
 
-import ru.tdd.app.models.dto.{JwtTokenDto, SignInDto, SignUpDto}
+import ru.tdd.app.models.dto.{BooleanDTO, JwtTokenDto, SignInDto, SignUpDto}
 import ru.tdd.app.models.enums.Role.User
 import ru.tdd.app.models.exceptions.{AlreadyExistException, NotFoundException}
 import ru.tdd.app.services.jwt.JwtServiceImp
@@ -8,7 +8,7 @@ import ru.tdd.controller.configs.JwtConfig
 import ru.tdd.database.entities.users.AppUser
 import ru.tdd.database.repositories.users.SlickUserRepository
 import slick.jdbc.PostgresProfile.api._
-import zio.ZIO
+import zio.{Task, ZIO}
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,9 +20,10 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 trait AuthService {
 
-  def signIn(dto: SignInDto): ZIO[Any, Throwable, JwtTokenDto]
+  def signIn(dto: SignInDto): Task[JwtTokenDto]
 
-  def signUp(dto: SignUpDto): ZIO[Any, Throwable, JwtTokenDto]
+  def signUp(dto: SignUpDto): Task[JwtTokenDto]
+
 }
 
 /**
@@ -35,15 +36,15 @@ class AuthServiceImp(db: Database, conf: JwtConfig) extends AuthService {
 
   private val jwtService = new JwtServiceImp(conf)
 
-  override def signIn(dto: SignInDto): ZIO[Any, Throwable, JwtTokenDto] = {
+  override def signIn(dto: SignInDto): Task[JwtTokenDto] = {
 
     for {
-      userOpt <-ZIO.fromFuture(implicit ex => rep.findOne(u => u.username === dto.username && u.chatId === dto.chatId))
+      userOpt <-ZIO.fromFuture(implicit ex => rep.findOne(_.chatId === dto.chatId))
       user <- ZIO.fromOption(userOpt).mapError(_ => NotFoundException("Пользователь не найден"))
     } yield JwtTokenDto(jwtService.createToken(user))
   }
 
-  override def signUp(dto: SignUpDto): ZIO[Any, Throwable, JwtTokenDto] = {
+  override def signUp(dto: SignUpDto): Task[JwtTokenDto] = {
 
     for {
       isExist <- ZIO.fromFuture(_ => rep.existsByUsernameAndChatId(dto.username, dto.chatId))
