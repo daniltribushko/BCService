@@ -2,7 +2,7 @@ package ru.tdd.controller.routes
 
 import ru.tdd.controller.configs.ServiceProxyConfig
 import zio.ZIO
-import zio.http.{Client, Header, Method, Request, Response, Routes, Status, URL, handler, string}
+import zio.http.{Client, Header, Method, Request, Response, Routes, Status, URL, handler, string, trailing}
 
 /**
  * @author Tribushko Danil
@@ -14,15 +14,15 @@ object GatewayRoute {
   def apply(services: Seq[ServiceProxyConfig]): Routes[Client, Nothing] = {
     Routes.fromIterable(
       services.map { service =>
-        Method.ANY / service.urlPattern / string("anyPath") ->
+        Method.ANY / service.urlPattern / trailing ->
           handler {
-            (_: String, req: Request) =>
-              val targetUrl = "http://" + s"${service.targetHost}:${service.targetPort}${req.url.path.encode}"
+            req: Request =>
+              val targetUrl = "http://" + s"${service.targetHost}:${service.targetPort}${req.url.encode}"
               Client.batched(
                 Request(
                   method = req.method,
                   url = URL.decode(targetUrl).getOrElse{
-                    throw new RuntimeException("неверный адрес")
+                    throw new RuntimeException("Неверный адрес")
                   },
                   headers = req.headers
                     .removeHeader(Header.Host.name)

@@ -22,5 +22,5 @@ class SlickUserRepository(db: Database) extends UserRepository(db) {
   override val entities: TableQuery[AppUserEntity] = AppUserEntity.entities
 
   override def existsByUsernameAndChatId(username: String, chatId: Long): Future[Boolean] =
-    exists(u => u.username === username && u.chatId === chatId)
+    exists(u => u.username === username || u.chatId === chatId)
 }

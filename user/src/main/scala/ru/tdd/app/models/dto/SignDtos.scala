@@ -28,12 +28,10 @@ object SignUpDto {
  * @author Tribushko Danil
  * @since 05.11.2025
  * @param chatId идентификатор пользователя в телеграмм
- * @param username имя пользователя в телеграмм
  *                 Класс-dto запроса на авторизацию пользователя
  */
 case class SignInDto(
-                      chatId: Long,
-                      username: String
+                      chatId: Long
                     )
 
 object SignInDto {

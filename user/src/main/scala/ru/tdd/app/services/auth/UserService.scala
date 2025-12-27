@@ -1,11 +1,11 @@
 package ru.tdd.app.services.auth
 
-import ru.tdd.app.models.dto.{UpdateUserDto, UserDto}
+import ru.tdd.app.models.dto.{BooleanDTO, UpdateUserDto, UserDto}
 import ru.tdd.app.models.exceptions.{AlreadyExistException, NotFoundException}
 import ru.tdd.database.entities.users.AppUser
 import ru.tdd.database.repositories.users.SlickUserRepository
 import slick.jdbc.PostgresProfile.api._
-import zio.ZIO
+import zio.{Task, ZIO}
 
 import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
@@ -54,6 +54,21 @@ trait UserService {
   def findById(
                 id: UUID
               ): ZIOUserDTO
+
+  /**
+   * Проверка наличия пользователя в базе данных
+   */
+  def isUserExistByChatId(chatId: Long): Task[BooleanDTO]
+
+  /**
+   * Проверка наличия пользователя по имени в базе данных
+   */
+  def isUserExistByUsername(username: String): Task[BooleanDTO]
+
+  /**
+   * Получение пользователя по идентификатору телеграм
+   */
+  def getByChatId(chatId: Long): ZIOUserDTO
 }
 
 class UserServiceImp(db: Database) extends UserService {
@@ -122,4 +137,17 @@ class UserServiceImp(db: Database) extends UserService {
         .mapError(_ => NotFoundException("Пользователь с указанным идентификатором не найден"))
     } yield UserDto.fromEntity(user)
 
+
+  override def isUserExistByChatId(chatId: Long): Task[BooleanDTO] =
+    ZIO.fromFuture(implicit ex => rep.exists(_.chatId === chatId).map(r => BooleanDTO(r)))
+
+  override def isUserExistByUsername(username: String): Task[BooleanDTO] =
+    ZIO.fromFuture(implicit ex => rep.exists(_.username === username).map(r => BooleanDTO(r)))
+
+  override def getByChatId(chatId: Long): Task[UserDto] =
+    for {
+      userOpt <- ZIO.fromFuture(_ => rep.findOne(_.chatId === chatId))
+      user <- ZIO.fromOption(userOpt)
+        .mapError(_ => NotFoundException("Пользователь с указанным идентификатором телеграмма не найден"))
+    } yield UserDto.fromEntity(user)
 }
