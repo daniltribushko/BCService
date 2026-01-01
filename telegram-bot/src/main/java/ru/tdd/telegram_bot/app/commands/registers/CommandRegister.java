@@ -1,10 +1,8 @@
 package ru.tdd.telegram_bot.app.commands.registers;
 
 import ru.tdd.telegram_bot.app.commands.handlers.CommandHandler;
-import ru.tdd.telegram_bot.model.enums.Role;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Tribushko Danil
@@ -14,5 +12,5 @@ import java.util.Map;
 public interface CommandRegister {
 
     /** Получить все обработчик из реестра*/
-    Map<Role, List<CommandHandler>> getAllHandlers();
+    List<CommandHandler> getAllHandlers();
 }

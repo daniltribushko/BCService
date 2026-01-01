@@ -11,4 +11,5 @@ public interface BotCommand extends Serializable {
 
     String getText();
 
+    Role getRole();
 }

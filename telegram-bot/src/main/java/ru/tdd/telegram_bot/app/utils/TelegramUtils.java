@@ -1,9 +1,10 @@
 package ru.tdd.telegram_bot.app.utils;
 
-import org.slf4j.Logger;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import ru.tdd.telegram_bot.app.exceptions.SimpleRuntimeException;
 
 /**
  * @author Tribushko Danil
@@ -18,17 +19,31 @@ public class TelegramUtils {
      * Отправка сообщения через бота с обработкой исключения телеграма
      * @param bot телеграм бот
      * @param message сообщение бота
-     * @param log лог для логирования исключения
      */
     public static void sendBotMessage(
             TelegramLongPollingBot bot,
-            SendMessage message,
-            Logger log
+            SendMessage message
     ) {
         try {
             bot.execute(message);
         } catch (TelegramApiException e) {
-            log.error(e.getMessage());
+            throw new SimpleRuntimeException(e.getMessage());
+        }
+    }
+
+    /**
+     * Отправка сообщения через бота с обработкой исключения телеграма
+     * @param bot телеграм бот
+     * @param message сообщение бота
+     */
+    public static void sendBotMessage(
+            TelegramLongPollingBot bot,
+            EditMessageText message
+    ) {
+        try {
+            bot.execute(message);
+        } catch (TelegramApiException e) {
+            throw new SimpleRuntimeException(e.getMessage());
         }
     }
 }

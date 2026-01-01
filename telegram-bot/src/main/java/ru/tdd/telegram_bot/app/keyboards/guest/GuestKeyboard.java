@@ -7,7 +7,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import ru.tdd.telegram_bot.app.keyboards.Keyboard;
 import ru.tdd.telegram_bot.model.enums.BotCommand;
-import ru.tdd.telegram_bot.model.enums.MainBotCommand;
+import ru.tdd.telegram_bot.model.enums.Role;
+import ru.tdd.telegram_bot.model.enums.main.MainBotCommand;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,7 +26,7 @@ public class GuestKeyboard implements Keyboard {
 
     @Override
     public ReplyKeyboardMarkup keyboard() {
-        List<BotCommand> commands = MainBotCommand.guestCommands();
+        List<BotCommand> commands = MainBotCommand.getCommandsByRole(Role.GUEST);
 
         return new ReplyKeyboardMarkup(commands.stream()
                 .collect(Collectors.groupingBy(

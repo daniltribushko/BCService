@@ -14,4 +14,6 @@ public class DateUtils {
     public static final int HOUR = MINUTE * 60;
 
     public static final int DAY = HOUR * 24;
+
+    private DateUtils() {}
 }

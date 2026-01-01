@@ -6,7 +6,7 @@ package ru.tdd.telegram_bot.model.dto;
  */
 public class BooleanDTO {
 
-    private Boolean result;
+    private boolean result;
 
     public BooleanDTO(){}
 
@@ -14,11 +14,11 @@ public class BooleanDTO {
         this.result = result;
     }
 
-    public Boolean getResult() {
+    public boolean getResult() {
         return result;
     }
 
-    public void setResult(Boolean result) {
+    public void setResult(boolean result) {
         this.result = result;
     }
 }

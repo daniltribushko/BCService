@@ -3,13 +3,11 @@ package ru.tdd.telegram_bot.app.commands.registers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.tdd.telegram_bot.app.commands.handlers.CommandHandler;
-import ru.tdd.telegram_bot.app.commands.handlers.main.ProfileCommandHandler;
-import ru.tdd.telegram_bot.app.commands.handlers.main.StartCommandHandler;
 import ru.tdd.telegram_bot.app.commands.handlers.main.RegisterCommandHandler;
-import ru.tdd.telegram_bot.model.enums.Role;
+import ru.tdd.telegram_bot.app.commands.handlers.main.StartCommandHandler;
+import ru.tdd.telegram_bot.app.commands.handlers.main.profile.ProfileCommandHandler;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Tribushko Danil
@@ -38,9 +36,7 @@ public class MainCommandRegister implements CommandRegister {
 
 
     @Override
-    public Map<Role, List<CommandHandler>> getAllHandlers() {
-        return Map.of(
-                Role.USER, List.of(startCommandHandler, registerCommandHandler, profileCommandHandler)
-        );
+    public List<CommandHandler> getAllHandlers() {
+         return List.of(startCommandHandler, registerCommandHandler, profileCommandHandler);
     }
 }

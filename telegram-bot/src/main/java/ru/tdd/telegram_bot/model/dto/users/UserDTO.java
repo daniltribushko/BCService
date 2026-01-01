@@ -1,6 +1,8 @@
 package ru.tdd.telegram_bot.model.dto.users;
 
-import ru.tdd.telegram_bot.model.dto.BaseDTO;
+import ru.tdd.telegram_bot.controller.annotations.LocalDateJsonFormat;
+import ru.tdd.telegram_bot.controller.annotations.LocalDateTimeJsonFormat;
+import ru.tdd.telegram_bot.model.enums.Role;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,18 +22,20 @@ public class UserDTO {
 
     private String username;
 
+    @LocalDateJsonFormat
     private LocalDate birthday;
 
+    @LocalDateTimeJsonFormat
     private LocalDateTime creationTime;
 
+    @LocalDateTimeJsonFormat
     private LocalDateTime updateTime;
 
-
-    private List<BaseDTO> roles;
+    private List<Role> roles;
 
     public UserDTO() {}
 
-    public UserDTO(UUID id, Long chatId, String username, LocalDate birthday, LocalDateTime creationTime, LocalDateTime updateTime, List<BaseDTO> roles) {
+    public UserDTO(UUID id, Long chatId, String username, LocalDate birthday, LocalDateTime creationTime, LocalDateTime updateTime, List<Role> roles) {
         this.id = id;
         this.chatId = chatId;
         this.username = username;
@@ -89,11 +93,11 @@ public class UserDTO {
         this.updateTime = updateTime;
     }
 
-    public List<BaseDTO> getRoles() {
+    public List<Role> getRoles() {
         return roles;
     }
 
-    public void setRoles(List<BaseDTO> roles) {
+    public void setRoles(List<Role> roles) {
         this.roles = roles;
     }
 }

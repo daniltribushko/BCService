@@ -12,4 +12,6 @@ public class RedisKeyNames {
     public static final String JWT_TOKEN = "jwt-token";
 
     public static final String CURRENT_USER = "current-user";
+
+    private RedisKeyNames() {}
 }
