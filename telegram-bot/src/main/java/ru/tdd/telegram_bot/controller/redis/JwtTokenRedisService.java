@@ -1,8 +1,7 @@
 package ru.tdd.telegram_bot.controller.redis;
 
 import ru.tdd.telegram_bot.app.exceptions.AppException;
-
-import java.util.Optional;
+import ru.tdd.telegram_bot.model.dto.users.JwtTokenDto;
 
 /**
  * @author Tribushko Danil
@@ -16,8 +15,8 @@ public interface JwtTokenRedisService {
      * @param chatId идентификатор пользователя в телеграме
      * @param token токен пользователя
      */
-    void setToken(Long chatId, String token);
+    void setToken(Long chatId, JwtTokenDto token);
 
     /** Получение токена из хранилища-редис */
-    Optional<String> getToken(Long chatId) throws AppException;
+    JwtTokenDto getToken(Long chatId) throws AppException;
 }

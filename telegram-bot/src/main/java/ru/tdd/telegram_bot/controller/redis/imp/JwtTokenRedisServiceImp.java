@@ -1,12 +1,12 @@
 package ru.tdd.telegram_bot.controller.redis.imp;
 
+import jakarta.annotation.PreDestroy;
 import org.apache.http.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import ru.tdd.telegram_bot.app.exceptions.AppException;
+import ru.tdd.telegram_bot.app.exceptions.SimpleRuntimeException;
 import ru.tdd.telegram_bot.app.utils.RedisKeysUtils;
 import ru.tdd.telegram_bot.app.utils.URLUtils;
 import ru.tdd.telegram_bot.controller.redis.JwtTokenRedisService;
@@ -22,6 +22,7 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -32,8 +33,6 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class JwtTokenRedisServiceImp implements JwtTokenRedisService {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtTokenRedisServiceImp.class);
-
     @Value("${services.gateway-port}")
     private String gatewayPort;
 
@@ -43,25 +42,33 @@ public class JwtTokenRedisServiceImp implements JwtTokenRedisService {
     @Value("${services.user.name}")
     private String userServiceName;
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, JwtTokenDto> redisTemplate;
 
     public JwtTokenRedisServiceImp(
-            RedisTemplate<String, Object> redisTemplate
+            RedisTemplate<String, JwtTokenDto> redisTemplate
     ) {
         this.redisTemplate = redisTemplate;
     }
 
+    @PreDestroy
+    public void cleanUp() {
+        redisTemplate.execute(connection -> {
+            connection.serverCommands().flushAll();
+            return null;
+        }, true);
+    }
+
     @Override
-    public void setToken(Long chatId, String token) {
+    public void setToken(Long chatId, JwtTokenDto token) {
         redisTemplate.opsForValue().set(
                 RedisKeysUtils.getCommandWithChatId(chatId, RedisKeyNames.JWT_TOKEN),
                 token,
-                1,
-                TimeUnit.DAYS
+                8,
+                TimeUnit.HOURS
         );
     }
 
-    private Optional<String> getTokenFromUserService(Long chatId) throws AppException {
+    private JwtTokenDto getTokenFromUserService(Long chatId) throws AppException {
         try (HttpClient client = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build()
@@ -79,29 +86,38 @@ public class JwtTokenRedisServiceImp implements JwtTokenRedisService {
                     .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            int statusCode = response.statusCode();
 
-            if (response.statusCode() == HttpStatus.SC_OK) {
+            if (statusCode == HttpStatus.SC_OK) {
                 JwtTokenDto tokenDto = DtoMapper.fromJson(response.body(), JwtTokenDto.class);
-                String jwt = tokenDto.getJwt();
 
-                setToken(chatId, jwt);
+                setToken(chatId, tokenDto);
 
-                return Optional.ofNullable(jwt);
-            } else {
+                return tokenDto;
+            } else if (statusCode >= 400 && statusCode < 500){
                 ExceptionDto exceptionDto = DtoMapper.fromJson(response.body(), ExceptionDto.class);
                 throw new AppException(exceptionDto.getMessage());
-            }
-        } catch (InterruptedException | URISyntaxException | IOException e) {
-            log.error(e.getMessage());
-            return Optional.empty();
+            } else
+                throw new AppException(response.body());
+        } catch (URISyntaxException | IOException e) {
+            throw new SimpleRuntimeException(e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SimpleRuntimeException(e.getMessage());
         }
     }
 
     @Override
-    public Optional<String> getToken(Long chatId) throws AppException {
-        Optional<String> tokenOpt = Optional.ofNullable(redisTemplate.opsForValue()
-                        .get(RedisKeysUtils.getCommandWithChatId(chatId, RedisKeyNames.JWT_TOKEN)))
-                .map(Object::toString);
-        return tokenOpt.isPresent() ? tokenOpt : getTokenFromUserService(chatId);
+    public JwtTokenDto getToken(Long chatId) throws AppException {
+        Optional<JwtTokenDto> tokenOpt = Optional.ofNullable(redisTemplate.opsForValue()
+                .get(
+                        RedisKeysUtils.getCommandWithChatId(chatId, RedisKeyNames.JWT_TOKEN))
+        ).flatMap(token -> {
+            if (token.getExpirationTime().isBefore(LocalDateTime.now()))
+                return Optional.of(token);
+            else
+                return Optional.empty();
+        });
+        return tokenOpt.orElseGet(() -> getTokenFromUserService(chatId));
     }
 }

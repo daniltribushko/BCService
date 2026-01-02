@@ -20,8 +20,8 @@ object Role {
   )
 
   /** Администратор приложения */
-  case object Admin extends Role("admin")
+  case object Admin extends Role("ADMIN")
 
   /** Обычный пользователь приложения */
-  case object User extends Role("user")
+  case object User extends Role("USER")
 }

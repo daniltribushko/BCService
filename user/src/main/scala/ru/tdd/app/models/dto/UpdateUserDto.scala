@@ -34,7 +34,7 @@ case class UserDto(
                   birthday: LocalDate,
                   creationTime: LocalDateTime,
                   updateTime: LocalDateTime,
-                  roles: Seq[BaseDTO]
+                  roles: Seq[String]
                   )
 
 object UserDto {
@@ -50,6 +50,6 @@ object UserDto {
       user.birthday,
       user.creationTime,
       user.updateTime,
-      user.roles.map(r => BaseDTO(r.name))
+      user.roles.map(r => r.name)
     )
 }

@@ -8,7 +8,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import ru.tdd.telegram_bot.app.keyboards.Keyboard;
 import ru.tdd.telegram_bot.model.enums.BotCommand;
-import ru.tdd.telegram_bot.model.enums.MainBotCommand;
+import ru.tdd.telegram_bot.model.enums.main.MainBotCommand;
 import ru.tdd.telegram_bot.model.enums.Role;
 
 import java.util.List;

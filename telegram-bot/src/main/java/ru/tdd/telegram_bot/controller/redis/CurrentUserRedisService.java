@@ -10,7 +10,7 @@ import java.util.Optional;
  * @since 20.12.2025
  * Сервис для работы с пользователями редис
  */
-public interface UserRedisService {
+public interface CurrentUserRedisService {
 
     /**
      * Установка пользователя в хранилище редис
@@ -23,4 +23,8 @@ public interface UserRedisService {
      * Получение пользователя из хранилища редис
      */
     Optional<UserDTO> getUser(Long chatId) throws AppException;
+
+    Optional<UserDTO> getUserWithoutException(Long chatId);
+
+    void deleteUser(Long chatId);
 }

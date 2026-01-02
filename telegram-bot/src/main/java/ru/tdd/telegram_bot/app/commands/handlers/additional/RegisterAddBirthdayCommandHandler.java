@@ -1,29 +1,33 @@
 package ru.tdd.telegram_bot.app.commands.handlers.additional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.http.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.tdd.telegram_bot.app.commands.handlers.AdditionalBotCommandHandler;
+import ru.tdd.telegram_bot.app.exceptions.SimpleRuntimeException;
 import ru.tdd.telegram_bot.app.keyboards.user.UserKeyboard;
 import ru.tdd.telegram_bot.app.utils.DateUtils;
 import ru.tdd.telegram_bot.app.utils.RedisKeysUtils;
 import ru.tdd.telegram_bot.app.utils.URLUtils;
+import ru.tdd.telegram_bot.controller.redis.BotCommandRedisService;
 import ru.tdd.telegram_bot.model.constants.RedisKeyNames;
 import ru.tdd.telegram_bot.model.dto.BotCommandDTO;
 import ru.tdd.telegram_bot.model.dto.DtoMapper;
 import ru.tdd.telegram_bot.model.dto.ExceptionDto;
 import ru.tdd.telegram_bot.model.dto.users.JwtTokenDto;
 import ru.tdd.telegram_bot.model.dto.users.SignUpDTO;
-import ru.tdd.telegram_bot.model.enums.AdditionalCommand;
 import ru.tdd.telegram_bot.model.enums.BotCommand;
+import ru.tdd.telegram_bot.model.enums.additional.RegisterCommand;
 
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -41,8 +45,6 @@ import java.util.regex.Pattern;
 @Component
 public class RegisterAddBirthdayCommandHandler implements AdditionalBotCommandHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(RegisterAddBirthdayCommandHandler.class);
-
     @Value("${services.gateway-port}")
     private String gatewayPort;
 
@@ -54,18 +56,83 @@ public class RegisterAddBirthdayCommandHandler implements AdditionalBotCommandHa
 
     private final UserKeyboard userKeyboard;
 
-    private final RedisTemplate<String, BotCommandDTO> botCommandRedisTemplate;
+    private final BotCommandRedisService botCommandRedisService;
 
-    private final RedisTemplate<String, Object> simpleRedisTemplate;
+    private final RedisTemplate<String, JwtTokenDto> simpleRedisTemplate;
 
     public RegisterAddBirthdayCommandHandler(
             UserKeyboard userKeyboard,
-            RedisTemplate<String, BotCommandDTO> botCommandRedisTemplate,
-            RedisTemplate<String, Object> simpleRedisTemplate
+            BotCommandRedisService botCommandRedisService,
+            RedisTemplate<String, JwtTokenDto> simpleRedisTemplate
     ) {
         this.userKeyboard = userKeyboard;
-        this.botCommandRedisTemplate = botCommandRedisTemplate;
+        this.botCommandRedisService = botCommandRedisService;
         this.simpleRedisTemplate = simpleRedisTemplate;
+    }
+
+    private void registerNewUser(
+            TelegramLongPollingBot bot,
+            Long chatId,
+            BotCommandDTO commandDto,
+            LocalDate date
+    ) throws JsonProcessingException {
+        SignUpDTO signUpDTO = DtoMapper.fromJson(commandDto.getBody(), SignUpDTO.class);
+        signUpDTO.setBirthday(date);
+
+        try (HttpClient client = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build()) {
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(
+                            new URI(
+                                    URLUtils.builder(userServiceHost + ":" + gatewayPort)
+                                            .addPathPart(userServiceName)
+                                            .addPathPart("sign-up")
+                                            .build()
+                            )
+                    )
+                    .POST(HttpRequest.BodyPublishers.ofString(DtoMapper.toJson(signUpDTO)))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+
+            if (response.statusCode() == HttpStatus.SC_CREATED) {
+                JwtTokenDto tokenDto = DtoMapper.fromJson(response.body(), JwtTokenDto.class);
+
+
+                botCommandRedisService.delete(chatId);
+                simpleRedisTemplate.opsForValue().set(
+                        RedisKeysUtils.getCommandWithChatId(chatId, RedisKeyNames.JWT_TOKEN),
+                        tokenDto,
+                        DateUtils.DAY,
+                        TimeUnit.DAYS
+                );
+
+                bot.execute(
+                        SendMessage.builder()
+                                .chatId(chatId)
+                                .text("Регистрация прошла успешно")
+                                .replyMarkup(userKeyboard.keyboard())
+                                .build()
+                );
+            } else {
+                bot.execute(
+                        SendMessage.builder()
+                                .chatId(chatId)
+                                .text(DtoMapper.fromJson(response.body(), ExceptionDto.class).getMessage())
+                                .build()
+                );
+
+                botCommandRedisService.delete(chatId);
+            }
+        } catch (TelegramApiException | IOException | URISyntaxException e) {
+            throw new SimpleRuntimeException(e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SimpleRuntimeException(e.getMessage());
+        }
     }
 
     @Override
@@ -73,91 +140,37 @@ public class RegisterAddBirthdayCommandHandler implements AdditionalBotCommandHa
         if (message.hasText() && Objects.equals(commandDto.getCommand(), commandForHandle())) {
             String dateStr = message.getText();
 
-            Pattern pattern = Pattern.compile("[0-9]{2}-[0-9]{2}-[0-9]{4}");
-            Long chayId = message.getChatId();
+            Pattern pattern = Pattern.compile("\\d{2}-\\d{2}-\\d{4}");
+            Long chatId = message.getChatId();
 
             try {
                 if (pattern.matcher(dateStr).find()) {
                     LocalDate date = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("dd-MM-yyyy"));
-
-                    if (date.isBefore(LocalDate.now())) {
-                        SignUpDTO signUpDTO = DtoMapper.fromJson(commandDto.getBody(), SignUpDTO.class);
-                        signUpDTO.setBirthday(date);
-
-                        try (HttpClient client = HttpClient.newBuilder()
-                                .followRedirects(HttpClient.Redirect.NORMAL)
-                                .build()) {
-
-                            HttpRequest request = HttpRequest.newBuilder()
-                                    .uri(
-                                            new URI(
-                                                    URLUtils.builder(userServiceHost + ":" + gatewayPort)
-                                                            .addPathPart(userServiceName)
-                                                            .addPathPart("sign-up")
-                                                            .build()
-                                            )
-                                    )
-                                    .POST(HttpRequest.BodyPublishers.ofString(DtoMapper.toJson(signUpDTO)))
-                                    .build();
-
-                            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-                            
-                            if (response.statusCode() == HttpStatus.SC_CREATED) {
-                                JwtTokenDto tokenDto = DtoMapper.fromJson(response.body(), JwtTokenDto.class);
-
-
-                                botCommandRedisTemplate.delete(RedisKeysUtils.getBotLastCommandKey(chayId));
-                                simpleRedisTemplate.opsForValue().set(
-                                        RedisKeysUtils.getCommandWithChatId(chayId, RedisKeyNames.JWT_TOKEN),
-                                        tokenDto.getJwt(),
-                                        DateUtils.DAY,
-                                        TimeUnit.DAYS
-                                );
-
-                                bot.execute(
-                                        SendMessage.builder()
-                                                .chatId(chayId)
-                                                .text("Регистрация прошла успешно")
-                                                .replyMarkup(userKeyboard.keyboard())
-                                                .build()
-                                );
-                            } else {
-                                ExceptionDto exceptionDto = DtoMapper.fromJson(response.body(), ExceptionDto.class);
-
-                                bot.execute(
-                                        SendMessage.builder()
-                                                .chatId(chayId)
-                                                .text(exceptionDto.getMessage())
-                                                .build()
-                                );
-                            }
-                        }
-
-                    } else {
+                    if (date.isBefore(LocalDate.now()))
+                        registerNewUser(bot, chatId, commandDto, date);
+                    else
                         bot.execute(
                                 SendMessage.builder()
-                                        .chatId(chayId)
-                                        .text("Дата должна быть в прошедшем времени")
+                                        .chatId(chatId)
+                                        .text("Дата рождения должна быть в прошедщем времени")
                                         .build()
                         );
-                    }
-                } else {
+                } else
                     bot.execute(
                             SendMessage.builder()
-                                    .chatId(chayId)
-                                    .text("Дата должна быть в формате dd-HH-yyyy")
+                                    .chatId(chatId)
+                                    .text("Дата должна быть в формате dd-MM-yyyy")
                                     .build()
                     );
-                }
             } catch (Exception ex) {
-                log.error(ex.getMessage());
+                Thread.currentThread().interrupt();
+                throw new SimpleRuntimeException(ex.getMessage());
             }
         }
     }
 
     @Override
     public BotCommand commandForHandle() {
-        return AdditionalCommand.RegisterCommand.ADD_BIRTHDAY;
+        return RegisterCommand.ADD_BIRTHDAY;
     }
 }

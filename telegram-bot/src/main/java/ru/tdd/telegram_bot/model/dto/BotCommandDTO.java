@@ -30,6 +30,10 @@ public class BotCommandDTO implements Serializable {
         this.body = body;
     }
 
+    public BotCommandDTO(BotCommand command) {
+        this.command = command;
+    }
+
     public BotCommand getCommand() {
         assert command != null;
         return command;
