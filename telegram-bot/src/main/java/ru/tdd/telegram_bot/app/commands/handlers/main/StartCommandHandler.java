@@ -59,8 +59,8 @@ public class StartCommandHandler implements MainCommandHandler {
                             new URI(
                                     URLUtils.builder(userServiceHost + ":" + gatewayPort)
                                             .addPathPart(userServiceName)
-                                            .addPathPart(message.getChatId())
                                             .addPathPart("exists")
+                                            .addQueryParameter("chat-id", message.getChatId())
                                             .build()
                             )
                     )
