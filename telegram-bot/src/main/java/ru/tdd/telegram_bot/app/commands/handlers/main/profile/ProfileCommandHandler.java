@@ -1,7 +1,5 @@
-package ru.tdd.telegram_bot.app.commands.handlers.main;
+package ru.tdd.telegram_bot.app.commands.handlers.main.profile;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -9,11 +7,12 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import ru.tdd.telegram_bot.app.commands.handlers.MainCommandHandler;
 import ru.tdd.telegram_bot.app.exceptions.AppException;
+import ru.tdd.telegram_bot.app.keyboards.profile.ProfileKeyboard;
 import ru.tdd.telegram_bot.app.utils.TelegramUtils;
-import ru.tdd.telegram_bot.controller.redis.UserRedisService;
-import ru.tdd.telegram_bot.model.dto.BaseDTO;
+import ru.tdd.telegram_bot.controller.redis.CurrentUserRedisService;
 import ru.tdd.telegram_bot.model.enums.BotCommand;
-import ru.tdd.telegram_bot.model.enums.MainBotCommand;
+import ru.tdd.telegram_bot.model.enums.Role;
+import ru.tdd.telegram_bot.model.enums.main.MainBotCommand;
 
 /**
  * @author Tribushko Danil
@@ -23,15 +22,25 @@ import ru.tdd.telegram_bot.model.enums.MainBotCommand;
 @Component
 public class ProfileCommandHandler implements MainCommandHandler {
 
-    private final UserRedisService userRedisService;
+    private static final String SUCCESS_TEXT_MESSAGE = """
+                                                            Ваш профиль:
+                                                            \tИмя: %s
+                                                            \tРоль: %s
+                                                            \tДата рождения: %s
+                                                            \tДата регистрации: %s
+                                                            """;
 
-    private static final Logger log = LoggerFactory.getLogger(ProfileCommandHandler.class);
+    private final CurrentUserRedisService userRedisService;
+
+    private final ProfileKeyboard profileKeyboard;
 
     @Autowired
     public ProfileCommandHandler(
-            UserRedisService userRedisService
+            CurrentUserRedisService userRedisService,
+            ProfileKeyboard profileKeyboard
     ) {
         this.userRedisService = userRedisService;
+        this.profileKeyboard = profileKeyboard;
     }
 
     @Override
@@ -45,28 +54,22 @@ public class ProfileCommandHandler implements MainCommandHandler {
                                     .chatId(chatId)
                                     .text(
                                             String.format(
-                                                    """
-                                                            Ваш профиль:
-                                                            \tИмя: %s
-                                                            \tРоль: %s
-                                                            \tДата рождения: %s
-                                                            \tДата регистрации: %s
-                                                            """
+                                                    SUCCESS_TEXT_MESSAGE
                                                     ,
                                                     userDto.getUsername(),
                                                     String.join(
                                                             ", ",
                                                             userDto.getRoles()
                                                                     .stream()
-                                                                    .map(BaseDTO::getName)
+                                                                    .map(Role::name)
                                                                     .toList()
                                                     ),
                                                     userDto.getBirthday(),
                                                     userDto.getCreationTime()
                                             )
                                     )
-                                    .build(),
-                            log
+                                    .replyMarkup(profileKeyboard.keyboard())
+                                    .build()
                     )
             );
         } catch (AppException e) {
@@ -75,8 +78,7 @@ public class ProfileCommandHandler implements MainCommandHandler {
                     SendMessage.builder()
                             .text(e.getMessage())
                             .chatId(chatId)
-                            .build(),
-                    log
+                            .build()
             );
         }
     }

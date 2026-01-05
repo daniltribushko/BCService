@@ -118,21 +118,20 @@ object UserRoutes {
             }
         }
     ) @@ jwtAuthHandler(db, conf, Seq(Role.User)) ++ Routes(
-      Method.GET / "users" / long("chat-id") / "exists" ->
-        handler {
-          (chatId: Long, _: Request) =>
-            service.isUserExistByChatId(chatId).map(dto => Response.json(dto.toJson).status(Status.Ok)).catchAll(ex =>
-              ZIO.succeed(Response.text(ex.getMessage).status(Status.BadRequest)))
-        },
       Method.GET / "users" / "exists" ->
         handler {
-          req: Request =>
-            req.queryParam("username").map { username =>
-              service.isUserExistByUsername(username).map(dto => Response.json(dto.toJson).status(Status.Ok)).catchAll(ex =>
-                ZIO.succeed(Response.text(ex.getMessage).status(Status.BadRequest)))
-            }.getOrElse {
-              ZIO.succeed(Response.status(Status.NotFound))
+          req: Request => {
+            (req.query[Long]("chat-id"), req.query[String]("username")) match {
+              case (Right(chatId), Left(_)) =>
+                service.isUserExistByChatId(chatId).map(dto => Response.json(dto.toJson).status(Status.Ok))
+                  .catchAll(ex => ZIO.succeed(Response.text(ex.getMessage).status(Status.BadRequest)))
+              case (Left(_), Right(username)) =>
+                service.isUserExistByUsername(username).map(dto => Response.json(dto.toJson).status(Status.Ok))
+                  .catchAll(ex => ZIO.succeed(Response.text(ex.getMessage).status(Status.BadRequest)))
+              case _ =>
+                ZIO.succeed(Response.text("Необходимо указать только 1 параметер").status(Status.BadRequest))
             }
+          }
         }
     )
   }

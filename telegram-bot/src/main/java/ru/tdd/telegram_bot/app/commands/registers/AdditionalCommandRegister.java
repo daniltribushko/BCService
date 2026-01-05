@@ -4,10 +4,10 @@ import org.springframework.stereotype.Component;
 import ru.tdd.telegram_bot.app.commands.handlers.CommandHandler;
 import ru.tdd.telegram_bot.app.commands.handlers.additional.RegisterAddBirthdayCommandHandler;
 import ru.tdd.telegram_bot.app.commands.handlers.additional.RegisterAddUsernameCommandHandler;
-import ru.tdd.telegram_bot.model.enums.Role;
+import ru.tdd.telegram_bot.app.commands.handlers.additional.profile.UpdateProfileSetBirthdayCommandHandler;
+import ru.tdd.telegram_bot.app.commands.handlers.additional.profile.UpdateProfileSetUsernameCommandHandler;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Tribushko Danil
@@ -21,18 +21,29 @@ public class AdditionalCommandRegister implements CommandRegister {
 
     private final RegisterAddBirthdayCommandHandler registerAddBirthdayCommandHandler;
 
+    private final UpdateProfileSetUsernameCommandHandler updateProfileSetUsernameCommandHandler;
+
+    private final UpdateProfileSetBirthdayCommandHandler updateProfileSetBirthdayCommandHandler;
+
     public AdditionalCommandRegister(
             RegisterAddUsernameCommandHandler registerAddUsernameCommandHandler,
-            RegisterAddBirthdayCommandHandler registerAddBirthdayCommandHandler
+            RegisterAddBirthdayCommandHandler registerAddBirthdayCommandHandler,
+            UpdateProfileSetUsernameCommandHandler updateProfileSetUsernameCommandHandler,
+            UpdateProfileSetBirthdayCommandHandler updateProfileSetBirthdayCommandHandler
     ) {
         this.registerAddUsernameCommandHandler = registerAddUsernameCommandHandler;
         this.registerAddBirthdayCommandHandler = registerAddBirthdayCommandHandler;
+        this.updateProfileSetUsernameCommandHandler = updateProfileSetUsernameCommandHandler;
+        this.updateProfileSetBirthdayCommandHandler = updateProfileSetBirthdayCommandHandler;
     }
 
     @Override
-    public Map<Role, List<CommandHandler>> getAllHandlers() {
-        return Map.of(
-                Role.USER, List.of(registerAddUsernameCommandHandler, registerAddBirthdayCommandHandler)
+    public List<CommandHandler> getAllHandlers() {
+        return List.of(
+                registerAddUsernameCommandHandler,
+                registerAddBirthdayCommandHandler,
+                updateProfileSetUsernameCommandHandler,
+                updateProfileSetBirthdayCommandHandler
         );
     }
 }

@@ -39,9 +39,9 @@ class AuthServiceImp(db: Database, conf: JwtConfig) extends AuthService {
   override def signIn(dto: SignInDto): Task[JwtTokenDto] = {
 
     for {
-      userOpt <-ZIO.fromFuture(implicit ex => rep.findOne(_.chatId === dto.chatId))
+      userOpt <-ZIO.fromFuture(_ => rep.findOne(_.chatId === dto.chatId))
       user <- ZIO.fromOption(userOpt).mapError(_ => NotFoundException("Пользователь не найден"))
-    } yield JwtTokenDto(jwtService.createToken(user))
+    } yield jwtService.createToken(user)
   }
 
   override def signUp(dto: SignUpDto): Task[JwtTokenDto] = {
@@ -51,6 +51,6 @@ class AuthServiceImp(db: Database, conf: JwtConfig) extends AuthService {
       _ <- ZIO.when(isExist)(ZIO.fail(AlreadyExistException("Пользователь уже создан")))
       newUser = AppUser(UUID.randomUUID(), dto.username, dto.chatId, NOW_TIME, NOW_TIME, Seq(User), dto.birthday)
       _ <- ZIO.fromFuture(_ => rep.save(newUser))
-    } yield JwtTokenDto(jwtService.createToken(newUser))
+    } yield jwtService.createToken(newUser)
   }
 }

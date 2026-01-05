@@ -1,8 +1,6 @@
 package ru.tdd.telegram_bot.app.commands.handlers.main;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -11,11 +9,12 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.tdd.telegram_bot.app.commands.handlers.MainCommandHandler;
+import ru.tdd.telegram_bot.app.exceptions.SimpleRuntimeException;
 import ru.tdd.telegram_bot.app.keyboards.guest.GuestKeyboard;
-import ru.tdd.telegram_bot.model.enums.BotCommand;
-import ru.tdd.telegram_bot.model.dto.BooleanDTO;
-import ru.tdd.telegram_bot.model.enums.MainBotCommand;
 import ru.tdd.telegram_bot.app.utils.URLUtils;
+import ru.tdd.telegram_bot.model.dto.BooleanDTO;
+import ru.tdd.telegram_bot.model.enums.BotCommand;
+import ru.tdd.telegram_bot.model.enums.main.MainBotCommand;
 
 import java.io.IOException;
 import java.net.URI;
@@ -31,8 +30,6 @@ import java.net.http.HttpResponse;
  */
 @Component
 public class StartCommandHandler implements MainCommandHandler {
-
-    private static final Logger log = LoggerFactory.getLogger(StartCommandHandler.class);
 
     @Value("${services.gateway-port}")
     private Integer gatewayPort;
@@ -62,8 +59,8 @@ public class StartCommandHandler implements MainCommandHandler {
                             new URI(
                                     URLUtils.builder(userServiceHost + ":" + gatewayPort)
                                             .addPathPart(userServiceName)
-                                            .addPathPart(message.getChatId())
                                             .addPathPart("exists")
+                                            .addQueryParameter("chat-id", message.getChatId())
                                             .build()
                             )
                     )
@@ -84,8 +81,11 @@ public class StartCommandHandler implements MainCommandHandler {
                 );
             }
 
-        } catch (URISyntaxException | IOException | InterruptedException | TelegramApiException e) {
-            log.error(e.getMessage());
+        } catch (URISyntaxException | IOException  | TelegramApiException e) {
+           throw new SimpleRuntimeException(e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SimpleRuntimeException(e.getMessage());
         }
     }
 

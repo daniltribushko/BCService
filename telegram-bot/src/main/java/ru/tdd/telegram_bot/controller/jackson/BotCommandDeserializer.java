@@ -1,13 +1,11 @@
 package ru.tdd.telegram_bot.controller.jackson;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import ru.tdd.telegram_bot.app.utils.TextUtils;
-import ru.tdd.telegram_bot.model.enums.AdditionalCommand;
 import ru.tdd.telegram_bot.model.enums.BotCommand;
-import ru.tdd.telegram_bot.model.enums.MainBotCommand;
+import ru.tdd.telegram_bot.model.enums.BotCommandsUtils;
 
 import java.io.IOException;
 
@@ -19,12 +17,12 @@ import java.io.IOException;
 public class BotCommandDeserializer extends JsonDeserializer<BotCommand> {
 
     @Override
-    public BotCommand deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JacksonException {
-        String value =  jsonParser.getText();
+    public BotCommand deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+        String value = jsonParser.getText();
 
         if (!TextUtils.isEmptyWithNull(value)) {
-            return MainBotCommand.valueOfOpt(value).or(() -> AdditionalCommand.valueOfOpt(value))
-                    .orElseThrow(() -> new IllegalArgumentException("Команда бота: " + value + "не найдена"));
+            return BotCommandsUtils.valueOfOpt(value)
+                    .orElseThrow(() -> new IllegalArgumentException("Команда бота: " + value + " не найдена"));
         } else {
             return null;
         }

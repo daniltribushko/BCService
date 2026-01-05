@@ -1,7 +1,5 @@
 package ru.tdd.telegram_bot.app.commands.handlers.additional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -10,14 +8,15 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import ru.tdd.telegram_bot.app.commands.handlers.AdditionalBotCommandHandler;
+import ru.tdd.telegram_bot.app.exceptions.SimpleRuntimeException;
 import ru.tdd.telegram_bot.app.utils.RedisKeysUtils;
 import ru.tdd.telegram_bot.app.utils.URLUtils;
 import ru.tdd.telegram_bot.model.dto.BooleanDTO;
 import ru.tdd.telegram_bot.model.dto.BotCommandDTO;
 import ru.tdd.telegram_bot.model.dto.DtoMapper;
 import ru.tdd.telegram_bot.model.dto.users.SignUpDTO;
-import ru.tdd.telegram_bot.model.enums.AdditionalCommand;
 import ru.tdd.telegram_bot.model.enums.BotCommand;
+import ru.tdd.telegram_bot.model.enums.additional.RegisterCommand;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -45,14 +44,11 @@ public class RegisterAddUsernameCommandHandler implements AdditionalBotCommandHa
     @Value("${services.user.name}")
     private String userServiceName;
 
-    private final Logger log;
-
     @Autowired
     public RegisterAddUsernameCommandHandler(
             RedisTemplate<String, BotCommandDTO> redisTemplate
     ) {
         this.redisTemplate = redisTemplate;
-        this.log = LoggerFactory.getLogger(getClass());
     }
 
     @Override
@@ -90,7 +86,7 @@ public class RegisterAddUsernameCommandHandler implements AdditionalBotCommandHa
                         );
                     } else {
                         signUpDTO.setUsername(username);
-                        commandDto.setCommand(AdditionalCommand.RegisterCommand.ADD_BIRTHDAY);
+                        commandDto.setCommand(RegisterCommand.ADD_BIRTHDAY);
                         commandDto.setBody(DtoMapper.toJson(signUpDTO));
 
                         redisTemplate.opsForValue().set(
@@ -110,14 +106,15 @@ public class RegisterAddUsernameCommandHandler implements AdditionalBotCommandHa
                 }
 
             } catch (Exception ex) {
-                log.error(ex.getMessage());
+                Thread.currentThread().interrupt();
+                throw new SimpleRuntimeException(ex.getMessage());
             }
         }
     }
 
     @Override
     public BotCommand commandForHandle() {
-        return AdditionalCommand.RegisterCommand.ADD_USERNAME;
+        return RegisterCommand.ADD_USERNAME;
     }
 
 }

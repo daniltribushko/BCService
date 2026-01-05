@@ -20,6 +20,9 @@ telegram:
       reply-markup:
         max-buttons-in-row:
           4
+      inline:
+        max-buttons-in-row:
+          4
 services:
   gateway-port:
     8000

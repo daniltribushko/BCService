@@ -1,11 +1,16 @@
 package ru.tdd.telegram_bot.app.utils;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 /**
  * @author Tribushk Danil
  * @since 20.12.2025
  * Утилиты для работы с url
  */
 public class URLUtils {
+
+    private URLUtils() {}
 
     public static URLBuilder builder(String url) {
         return new URLBuilder(url);
@@ -32,7 +37,7 @@ public class URLUtils {
                 url.append("&");
             }
 
-            url.append(key).append("=").append(value);
+            url.append(key).append("=").append(URLEncoder.encode(value.toString(), StandardCharsets.UTF_8));
 
             return this;
         }

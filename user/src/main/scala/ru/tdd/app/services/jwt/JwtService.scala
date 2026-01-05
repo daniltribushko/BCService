@@ -3,9 +3,11 @@ package ru.tdd.app.services.jwt
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
 import io.jsonwebtoken.{Claims, Jwts}
+import ru.tdd.app.models.dto.JwtTokenDto
 import ru.tdd.controller.configs.JwtConfig
 import ru.tdd.database.entities.users.AppUser
 
+import java.time.{LocalDateTime, ZoneId}
 import javax.crypto.SecretKey
 import scala.jdk.CollectionConverters.MapHasAsJava
 
@@ -17,7 +19,7 @@ import scala.jdk.CollectionConverters.MapHasAsJava
 trait JwtService {
 
   /** Создание токена */
-  def createToken(user: AppUser): String
+  def createToken(user: AppUser): JwtTokenDto
 
   /** Получение данных из токена */
   def parseToken(token: String): Claims
@@ -34,14 +36,20 @@ trait JwtService {
  */
 class JwtServiceImp(conf: JwtConfig) extends JwtService {
 
-  override final def createToken(user: AppUser): String =
-    Jwts.builder()
-      .subject(user.username)
-      .issuedAt(NOW)
-      .expiration(NOW + Day)
-      .claims(Map("chatId" -> user.chatId, "id" -> user.id).asJava)
-      .signWith(secretKey)
-      .compact()
+  override final def createToken(user: AppUser): JwtTokenDto = {
+    val issuedAt = NOW
+    val expiration = NOW + Day
+    JwtTokenDto(
+      Jwts.builder()
+        .subject(user.username)
+        .issuedAt(issuedAt)
+        .expiration(expiration)
+        .claims(Map("chatId" -> user.chatId, "id" -> user.id).asJava)
+        .signWith(secretKey)
+        .compact(),
+      expiration.toInstant.atZone(ZoneId.systemDefault()).toLocalDateTime
+    )
+  }
 
   override final def parseToken(token: String): Claims =
     Jwts.parser()

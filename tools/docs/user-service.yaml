@@ -136,13 +136,53 @@ paths:
       description: Получить всех пользователей
       tags:
         - User
-      responses: 
+      parameters:
+        - $ref: '#/components/parameters/Username'
+        - $ref: '#/components/parameters/BirthdayStart'
+        - $ref: '#/components/parameters/BirthdayEnd'
+        - $ref: '#/components/parameters/CreationTimeStart'
+        - $ref: '#/components/parameters/CreationTimeEnd'
+        - $ref: '#/components/parameters/UpdateTimeStart'
+        - $ref: '#/components/parameters/UpdateTimeEnd'
+      responses:
         '200':
           description: Пользователи получены
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UsersDto'
+    get:
+      summary: Find By ChatId
+      description: Получить пользователя по идентификатору телеграм
+      tags:
+        - User
+      parameters:
+        - $ref: '#/components/parameters/UserChatId'
+      responses:
+        '200':
+          description: Пользователь получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+  /users/exists:
+    get:
+      summary: Is Exists By Username Or ChatId
+      description: Проверка сущетвует ли пользователь с указанным именем или идентификатором телеграм
+      security:
+        - [ ]
+      tags:
+        - User
+      parameters:
+        - $ref: '#/components/parameters/Username'
+        - $ref: '#/compomemts/parameters/UserChatId'
+      responses:
+        '200':
+          description: Результат получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BooleanDTO'
 components:
   securitySchemes:
     BearerAuth:
@@ -160,6 +200,14 @@ components:
         type: string
         format: uuid
         description: Идентификатор пользователя
+    UserChatId:
+      name: chatId
+      in: query
+      required: true
+      schema:
+        type: integer
+        format: int64
+        description: Идентификатор пользователя в телеграм
     Username:
       name: username
       in: query
@@ -183,32 +231,41 @@ components:
     CreationTimeStart:
       name: creation-time-start
       in: query
-      schema: 
+      schema:
         type: string
         format: date
         description: Минимальное время создания пользователя
     CreationTimeEnd:
       name: creation-time-end
       in: query
-      schema: 
+      schema:
         type: string
         format: date-time
         description: Максимальное время создания пользователя
     UpdateTimeStart:
       name: update-time-start
       in: query
-      schema: 
+      schema:
         type: string
         format: date-time
         description: Минимальное время обновления пользователя
     UpdateTimeEnd:
       name: update-time-end
       in: query
-      schema: 
+      schema:
         type: string
         format: date-time
         description: Максимальное время обновления пользователя
   schemas:
+    BooleanDTO:
+      type: object
+      required:
+        - result
+      properties:
+        result:
+          type: boolean
+          example: true
+          description: Логический результат запроса
     SignUp:
       type: object
       required:

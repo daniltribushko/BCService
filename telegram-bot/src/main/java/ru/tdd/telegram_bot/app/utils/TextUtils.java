@@ -7,8 +7,10 @@ package ru.tdd.telegram_bot.app.utils;
  */
 public class TextUtils {
 
+    private TextUtils() {}
+
     /** Проверка является ли строка пустой и не равной null*/
-    public static Boolean isEmptyWithNull(String str) {
+    public static boolean isEmptyWithNull(String str) {
         return str == null || str.isEmpty();
     }
 }
