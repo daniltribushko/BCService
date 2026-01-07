@@ -9,3 +9,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+server:
+  port: 8002
+services:
+  gateway-port: 8000
+  users:
+    host: http://localhost
+    name: users
+jwt:
+  secret: feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac
