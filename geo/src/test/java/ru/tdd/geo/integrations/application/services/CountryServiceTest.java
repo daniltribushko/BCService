@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.geo.TestcontainersConfiguration;
 import ru.tdd.geo.application.models.dto.geo.country.*;
 import ru.tdd.geo.application.models.exceptions.AlreadyExistsException;
@@ -26,6 +27,7 @@ import java.util.UUID;
  * Набор интеграционных тестов сервиса по работе со странами
  */
 @SpringBootTest
+@Testcontainers
 @ImportTestcontainers(value = TestcontainersConfiguration.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class CountryServiceTest {
@@ -63,7 +65,7 @@ public class CountryServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным именем уже создана", actual.getMessage());
+        Assertions.assertEquals("Страна с указанным названием уже создана", actual.getMessage());
     }
 
     @Test
@@ -120,7 +122,7 @@ public class CountryServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным именем уже создана", actual.getMessage());
+        Assertions.assertEquals("Страна с указанным названием уже создана", actual.getMessage());
     }
 
     @Test

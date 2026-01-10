@@ -1,9 +1,11 @@
 package ru.tdd.geo.application.models.dto.geo.country;
 
+import ru.tdd.geo.application.models.dto.geo.region.RegionDTO;
 import ru.tdd.geo.database.entities.Country;
 
 import java.time.ZoneId;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Tribushko Danil
@@ -18,19 +20,26 @@ public class CountryDetailsDTO {
 
     private ZoneId zoneId;
 
+    private List<RegionDTO> regions;
+
     public CountryDetailsDTO() {}
 
-    public CountryDetailsDTO(UUID id, String name, ZoneId zoneId) {
+    public CountryDetailsDTO(UUID id, String name, ZoneId zoneId, List<RegionDTO> regions) {
         this.id = id;
         this.name = name;
         this.zoneId = zoneId;
+        this.regions = regions;
     }
 
     public static CountryDetailsDTO mapFromEntity(Country country) {
         return new CountryDetailsDTO(
                 country.getId(),
                 country.getName(),
-                country.getZoneId()
+                country.getZoneId(),
+                country.getRegions().stream().map(RegionDTO::mapFromEntity)
+                        .sorted(Comparator.comparing(RegionDTO::getName))
+                        .toList()
+
         );
     }
 
@@ -56,5 +65,13 @@ public class CountryDetailsDTO {
 
     public void setZoneId(ZoneId zoneId) {
         this.zoneId = zoneId;
+    }
+
+    public List<RegionDTO> getRegions() {
+        return regions;
+    }
+
+    public void setRegions(List<RegionDTO> regions) {
+        this.regions = regions;
     }
 }

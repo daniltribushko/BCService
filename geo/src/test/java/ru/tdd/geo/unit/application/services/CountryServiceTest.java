@@ -67,7 +67,7 @@ class CountryServiceTest {
 
         Mockito.verify(countryRepository).exists(any(Specification.class));
         Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным именем уже создана", actual.getMessage());
+        Assertions.assertEquals("Страна с указанным названием уже создана", actual.getMessage());
     }
 
     @Test
@@ -120,7 +120,7 @@ class CountryServiceTest {
         Mockito.verify(countryRepository).exists(any(Specification.class));
         Mockito.verify(countryRepository).findById(id);
         Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным именем уже создана", actual.getMessage());
+        Assertions.assertEquals("Страна с указанным названием уже создана", actual.getMessage());
     }
 
     @Test

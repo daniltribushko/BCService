@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import ru.tdd.geo.application.models.dto.geo.country.*;
 import ru.tdd.geo.application.models.exceptions.AlreadyExistsException;
 import ru.tdd.geo.application.models.exceptions.NotFoundException;
+import ru.tdd.geo.application.models.exceptions.geo.country.CountryAlreadyExistsException;
+import ru.tdd.geo.application.models.exceptions.geo.country.CountryByIdNotFoundException;
 import ru.tdd.geo.application.services.CountryService;
 import ru.tdd.geo.application.utils.TextUtils;
 import ru.tdd.geo.database.entities.Country;
@@ -36,7 +38,7 @@ public class CountryServiceImp implements CountryService {
     public CountryDTO create(CreateCountryDTO createDTO) {
         String name = createDTO.getName();
         if (countryRepository.exists(NameSpecification.byNameEqual(name))) {
-            throw new AlreadyExistsException("Страна с указанным именем уже создана");
+            throw new CountryAlreadyExistsException();
         }
         Country country = new Country(name);
         country.setZoneId(createDTO.getZoneId());
@@ -47,7 +49,7 @@ public class CountryServiceImp implements CountryService {
     @Override
     public CountryDTO update(UUID id, UpdateCountryDTO updateDTO) {
         Country country = countryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Страна с указанным идентификатором не найдена"));
+                .orElseThrow(CountryByIdNotFoundException::new);
 
         String newName = updateDTO.getName();
 
@@ -56,7 +58,7 @@ public class CountryServiceImp implements CountryService {
                 country.setName(newName);
 
             } else
-                throw new AlreadyExistsException("Страна с указанным именем уже создана");
+                throw new CountryAlreadyExistsException();
         }
 
         Optional.ofNullable(updateDTO.getZoneId()).ifPresent(country::setZoneId);
@@ -69,7 +71,7 @@ public class CountryServiceImp implements CountryService {
     @Override
     public void delete(UUID id) {
         Country country = countryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Страна с указанным идентификатором не найдена"));
+                .orElseThrow(CountryByIdNotFoundException::new);
 
         countryRepository.delete(country);
     }
@@ -77,7 +79,7 @@ public class CountryServiceImp implements CountryService {
     @Override
     public CountryDetailsDTO getById(UUID id) {
         return CountryDetailsDTO.mapFromEntity(countryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Страна с указанным идентификатором не найдена")));
+                .orElseThrow(CountryByIdNotFoundException::new));
     }
 
     @Override

@@ -15,6 +15,7 @@ import ru.tdd.geo.database.entities.Region;
 import ru.tdd.geo.database.repositories.CountryRepository;
 import ru.tdd.geo.database.repositories.RegionRepository;
 import ru.tdd.geo.database.specifications.NameSpecification;
+import ru.tdd.geo.database.specifications.RegionSpecification;
 
 import java.util.List;
 import java.util.Optional;
@@ -130,36 +131,63 @@ public class RegionRepositoryTest {
     }
 
     @Test
-    void findByNameTest() {
+    void findByNameAndCountryNameTest() {
         Country country = new Country("Find By Name Test Country");
+        Country country1 = new Country("CoUntRY Test");
+        Country country2 = new Country("Testing");
 
-        countryRepository.save(country);
+        countryRepository.saveAll(List.of(country, country1, country2));
 
         Region region1 = new Region("Test DisTrIcr", country);
-        Region region2 = new Region("TeSt", country);
-        Region region3 = new Region("region", country);
+        Region region2 = new Region("TeSt", country1);
+        Region region3 = new Region("region", country2);
 
         regionRepository.saveAll(List.of(region1, region2, region3));
 
-        List<Region> regions1 = regionRepository.findAll(NameSpecification.byNameWithFullTextSearch("tE"));
-        List<Region> regions2 = regionRepository.findAll(NameSpecification.byNameWithFullTextSearch("dIs"));
-        List<Region> regions3 = regionRepository.findAll(NameSpecification.byNameWithFullTextSearch("GiON"));
-        List<Region> regions4 = regionRepository.findAll(NameSpecification.byNameWithFullTextSearch("NoT fOUnd"));
+        List<Region> regions1 = regionRepository.findAll(
+                RegionSpecification.byNameAndCountryNameFullTextSearch("tE", "tEsT")
+        );
+        List<Region> regions2 = regionRepository.findAll(
+                RegionSpecification.byNameAndCountryNameFullTextSearch("dIs", null)
+        );
+        List<Region> regions3 = regionRepository.findAll(
+                RegionSpecification.byNameAndCountryNameFullTextSearch("GiON", null)
+        );
+        List<Region> regions4 = regionRepository.findAll(
+                RegionSpecification.byNameAndCountryNameFullTextSearch(null, "cOuNtRy")
+        );
 
         Assertions.assertEquals(2, regions1.size());
         Assertions.assertEquals(1, regions2.size());
         Assertions.assertEquals(1, regions3.size());
-        Assertions.assertEquals(0, regions4.size());
+        Assertions.assertEquals(2, regions4.size());
     }
 
     @Test
-    void existsByNameTest() {
-        Country country = new Country("Exists By Name Test Country");
+    void existsByNameAndCountryTest() {
+        Country country1 = new Country("Country 1");
+        Country country2 = new Country("Country 2");
 
-        countryRepository.save(country);
+        countryRepository.saveAll(List.of(country1, country2));
 
-        Region region1 = new Region("ХМАО", country);
-        Region region2 = new Region("Московская область", country);
-        Region region3 = new Region("Краснодарский край", country);
+        Region region1 = new Region("ХМАО", country1);
+        Region region2 = new Region("Московская область", country2);
+        Region region3 = new Region("Краснодарский край", country2);
+
+        regionRepository.saveAll(List.of(region1, region2, region3));
+
+        boolean actual1 = regionRepository.exists(
+                RegionSpecification.byNameAndCountryIdEqual("ХМАО", country1.getId())
+        );
+        boolean actual2 = regionRepository.exists(
+                RegionSpecification.byNameAndCountryIdEqual("Московская область", country1.getId())
+        );
+        boolean actual3 = regionRepository.exists(
+                RegionSpecification.byNameAndCountryIdEqual("Краснодарский край", country2.getId())
+        );
+
+        Assertions.assertTrue(actual1);
+        Assertions.assertFalse(actual2);
+        Assertions.assertTrue(actual3);
     }
 }

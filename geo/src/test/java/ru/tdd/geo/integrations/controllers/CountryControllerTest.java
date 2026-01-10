@@ -97,7 +97,7 @@ class CountryControllerTest {
 
         response.andExpect(status().isConflict())
                 .andExpect(jsonPath("$.statusCode", is(HttpStatus.CONFLICT.value())))
-                .andExpect(jsonPath("$.message", is("Страна с указанным именем уже создана")));
+                .andExpect(jsonPath("$.message", is("Страна с указанным названием уже создана")));
     }
 
     @Test
@@ -163,7 +163,7 @@ class CountryControllerTest {
 
         response.andExpect(status().isConflict())
                 .andExpect(jsonPath("$.statusCode", is(HttpStatus.CONFLICT.value())))
-                .andExpect(jsonPath("$.message", is("Страна с указанным именем уже создана")));
+                .andExpect(jsonPath("$.message", is("Страна с указанным названием уже создана")));
     }
 
     @Test
