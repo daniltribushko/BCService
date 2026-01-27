@@ -11,6 +11,8 @@ spring:
       ddl-auto: update
 server:
   port: 8002
+  servlet:
+    context-path: /api/v1
 services:
   gateway-port: 8000
   users:

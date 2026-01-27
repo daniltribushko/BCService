@@ -74,7 +74,7 @@ public class RegionController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    @GetMapping("/all")
+    @GetMapping
     @Secured("ROLE_USER")
     public ResponseEntity<RegionsDTO> findAll(
             @RequestParam(name = "name", required = false)

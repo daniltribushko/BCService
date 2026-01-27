@@ -41,6 +41,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ImportTestcontainers(value = TestcontainersConfiguration.class)
 class RegionControllerTest {
 
+    private static final String BASE_URL = "/geo/regions";
+
     private final MockMvc mockMvc;
 
     private final CountryRepository countryRepository;
@@ -70,7 +72,7 @@ class RegionControllerTest {
         CreateRegionDTO dto = new CreateRegionDTO("New Region", country.getId());
 
         ResultActions response = mockMvc.perform(
-                post("/geo/regions")
+                post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(dto))
         );
@@ -84,7 +86,7 @@ class RegionControllerTest {
     @WithMockUser(username = "user")
     void saveNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
-                post("/geo/regions")
+                post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(new CreateRegionDTO("Region For Create", UUID.randomUUID())))
         );
@@ -106,7 +108,7 @@ class RegionControllerTest {
         CreateRegionDTO dto = new CreateRegionDTO("Moscow Oblast", country.getId());
 
         ResultActions response = mockMvc.perform(
-                post("/geo/regions")
+                post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(dto))
         );
@@ -138,19 +140,19 @@ class RegionControllerTest {
         UpdateRegionDTO dto3 = new UpdateRegionDTO("Updated Region 2", country2.getId());
 
         ResultActions response1 = mockMvc.perform(
-                put("/geo/regions/" + region1.getId())
+                put(BASE_URL + "/" + region1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(dto1))
         );
 
         ResultActions response2 = mockMvc.perform(
-                put("/geo/regions/" + region1.getId())
+                put(BASE_URL + "/" + region1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(dto2))
         );
 
         ResultActions response3 = mockMvc.perform(
-                put("/geo/regions/" + region2.getId())
+                put(BASE_URL + "/" + region2.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(dto3))
         );
@@ -173,7 +175,7 @@ class RegionControllerTest {
     @WithMockUser(username = "user")
     void updateNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
-                put("/geo/regions/" + UUID.randomUUID())
+                put(BASE_URL + "/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(new UpdateRegionDTO("Region", UUID.randomUUID())))
         );
@@ -185,7 +187,7 @@ class RegionControllerTest {
     @WithMockUser(username = "admin", roles = "ADMIN")
     void updateRegionNotFoundTest() throws Exception {
         ResultActions response = mockMvc.perform(
-                put("/geo/regions/" + UUID.randomUUID())
+                put(BASE_URL + "/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(new UpdateRegionDTO(null, null)))
         );
@@ -206,7 +208,7 @@ class RegionControllerTest {
         regionRepository.save(region);
 
         ResultActions response = mockMvc.perform(
-                put("/geo/regions/" + region.getId())
+                put(BASE_URL + "/" + region.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(new UpdateRegionDTO(null, UUID.randomUUID())))
         );
@@ -230,13 +232,13 @@ class RegionControllerTest {
         regionRepository.saveAll(List.of(region1, region2, region3));
 
         ResultActions response1 = mockMvc.perform(
-                put("/geo/regions/" + region1.getId())
+                put(BASE_URL + "/" + region1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(new UpdateRegionDTO("Already Exists Region", null)))
         );
 
         ResultActions response2 = mockMvc.perform(
-                put("/geo/regions/" + region1.getId())
+                put(BASE_URL + "/" + region1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(new UpdateRegionDTO("Already Exists Region", country2.getId())))
         );
@@ -260,7 +262,7 @@ class RegionControllerTest {
         regionRepository.save(region);
 
         ResultActions response = mockMvc.perform(
-                delete("/geo/regions/" + region.getId())
+                delete(BASE_URL + "/" + region.getId())
         );
 
         response.andExpect(status().isNoContent());
@@ -270,7 +272,7 @@ class RegionControllerTest {
     @WithMockUser(username = "user")
     void deleteNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
-                delete("/geo/regions/" + UUID.randomUUID())
+                delete(BASE_URL + "/" + UUID.randomUUID())
         );
 
         response.andExpect(status().isForbidden());
@@ -280,7 +282,7 @@ class RegionControllerTest {
     @WithMockUser(username = "admin", roles = "ADMIN")
     void deleteNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
-                delete("/geo/regions/" + UUID.randomUUID())
+                delete(BASE_URL + "/" + UUID.randomUUID())
         );
 
         response.andExpect(status().isNotFound())
@@ -301,7 +303,7 @@ class RegionControllerTest {
         regionRepository.saveAll(List.of(region1, region2, region3));
 
         ResultActions response = mockMvc.perform(
-                get("/geo/regions/" + region2.getId())
+                get(BASE_URL + "/" + region2.getId())
         );
 
         response.andExpect(status().isOk())
@@ -312,7 +314,7 @@ class RegionControllerTest {
     @WithMockUser(username = "user")
     void findByIdNotFoundFail() throws Exception {
         ResultActions response = mockMvc.perform(
-                get("/geo/regions/" + UUID.randomUUID())
+                get(BASE_URL + "/" + UUID.randomUUID())
         );
 
         response.andExpect(status().isNotFound())
@@ -338,7 +340,7 @@ class RegionControllerTest {
 
         ResultActions response1 = mockMvc.perform(
                 get(
-                        URLUtils.builder("/geo/regions/all")
+                        URLUtils.builder(BASE_URL)
                                 .addQueryParameter("country-name", "TEST", false)
                                 .addQueryParameter("name", "OBLAST", false)
                                 .build()
@@ -347,7 +349,7 @@ class RegionControllerTest {
 
         ResultActions response2 = mockMvc.perform(
                 get(
-                        URLUtils.builder("/geo/regions/all")
+                        URLUtils.builder(BASE_URL)
                                 .addQueryParameter("country-name", "CoUnTrY", false)
                                 .build()
                 )
@@ -355,7 +357,7 @@ class RegionControllerTest {
 
         ResultActions response3 = mockMvc.perform(
           get(
-                  URLUtils.builder("/geo/regions/all")
+                  URLUtils.builder(BASE_URL)
                           .addQueryParameter("name", "tE", false)
                           .build()
           )

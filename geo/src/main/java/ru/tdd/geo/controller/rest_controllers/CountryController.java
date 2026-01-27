@@ -64,7 +64,7 @@ public class CountryController {
         return ResponseEntity.status(HttpStatus.OK).body(countryService.getById(id));
     }
 
-    @GetMapping("/all")
+    @GetMapping
     @Secured(value = "ROLE_USER")
     public ResponseEntity<CountriesDTO> findAll(
             @RequestParam(name = "name", required = false)

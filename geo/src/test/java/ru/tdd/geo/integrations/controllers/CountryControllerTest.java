@@ -42,6 +42,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ImportTestcontainers(value = TestcontainersConfiguration.class)
 class CountryControllerTest {
 
+    private static final String BASE_URL = "/geo/countries";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -58,7 +60,7 @@ class CountryControllerTest {
     void createTest() throws Exception {
         CreateCountryDTO createDto = new CreateCountryDTO("New Country", ZoneId.systemDefault());
 
-        ResultActions response = mockMvc.perform(post("/geo/countries")
+        ResultActions response = mockMvc.perform(post(BASE_URL)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(DTOMapper.toJson(createDto))
         );
@@ -74,7 +76,7 @@ class CountryControllerTest {
     void createNotAdminFailTest() throws Exception {
         CreateCountryDTO createDto = new CreateCountryDTO("New Country", ZoneId.systemDefault());
 
-        ResultActions response = mockMvc.perform(post("/geo/countries")
+        ResultActions response = mockMvc.perform(post(BASE_URL)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(DTOMapper.toJson(createDto))
         );
@@ -90,7 +92,7 @@ class CountryControllerTest {
         CreateCountryDTO createDto = new CreateCountryDTO("Already Exists Country", ZoneId.systemDefault());
 
         ResultActions response = mockMvc.perform(
-                post("/geo/countries")
+                post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(createDto))
         );
@@ -108,7 +110,7 @@ class CountryControllerTest {
         countryRepository.save(country);
 
         ResultActions response = mockMvc.perform(
-                put("/geo/countries/" + country.getId())
+                put(BASE_URL + "/" + country.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(new UpdateCountryDTO("New Country Name", null)))
         );
@@ -123,7 +125,7 @@ class CountryControllerTest {
     @WithMockUser(username = "user")
     void updateNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
-                put("/geo/countries/" + UUID.randomUUID())
+                put(BASE_URL + "/" + UUID.randomUUID())
                         .content(DTOMapper.toJson(new UpdateCountryDTO(null, null)))
                         .contentType(MediaType.APPLICATION_JSON)
         );
@@ -135,7 +137,7 @@ class CountryControllerTest {
     @WithMockUser(username = "admin", roles = "ADMIN")
     void updateNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
-                put("/geo/countries/" + UUID.randomUUID())
+                put(BASE_URL + "/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(new UpdateCountryDTO(null, null)))
         );
@@ -156,7 +158,7 @@ class CountryControllerTest {
         countryRepository.saveAll(List.of(country1, country2));
 
         ResultActions response = mockMvc.perform(
-                put("/geo/countries/" + country1.getId())
+                put(BASE_URL + "/" + country1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(DTOMapper.toJson(new UpdateCountryDTO("Already Exists Country", null)))
         );
@@ -174,7 +176,7 @@ class CountryControllerTest {
         countryRepository.save(country);
 
         ResultActions response = mockMvc.perform(
-                delete("/geo/countries/" + country.getId())
+                delete(BASE_URL + "/" + country.getId())
         );
 
         response.andExpect(status().isNoContent());
@@ -184,7 +186,7 @@ class CountryControllerTest {
     @WithMockUser(username = "user")
     void deleteNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
-                delete("/geo/countries/" + UUID.randomUUID())
+                delete(BASE_URL + "/" + UUID.randomUUID())
         );
 
         response.andExpect(status().isForbidden());
@@ -194,7 +196,7 @@ class CountryControllerTest {
     @WithMockUser(username = "admin", roles = "ADMIN")
     void deleteNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
-                delete("/geo/countries/" + UUID.randomUUID())
+                delete(BASE_URL + "/" + UUID.randomUUID())
         );
 
         response.andExpect(status().isNotFound());
@@ -208,7 +210,7 @@ class CountryControllerTest {
         countryRepository.save(country);
 
         ResultActions response = mockMvc.perform(
-                get("/geo/countries/" + country.getId())
+                get(BASE_URL + "/" + country.getId())
         );
 
         response.andExpect(status().isOk())
@@ -221,7 +223,7 @@ class CountryControllerTest {
     @WithMockUser(username = "user")
     void findByIdNotFoundTest() throws Exception {
         ResultActions response = mockMvc.perform(
-                get("/geo/countries/" + UUID.randomUUID())
+                get(BASE_URL + "/" + UUID.randomUUID())
         );
 
         response.andExpect(status().isNotFound());
@@ -239,7 +241,7 @@ class CountryControllerTest {
 
         ResultActions response1 = mockMvc.perform(
                 get(
-                        URLUtils.builder("/geo/countries/all")
+                        URLUtils.builder(BASE_URL)
                                 .addQueryParameter("name", "аНДа", false)
                                 .build()
                 )
@@ -247,7 +249,7 @@ class CountryControllerTest {
 
         ResultActions response2 = mockMvc.perform(
                 get(
-                        URLUtils.builder("/geo/countries/all")
+                        URLUtils.builder(BASE_URL)
                                 .addQueryParameter("page", 3, false)
                                 .addQueryParameter("per_page", 1, false)
                                 .build()
@@ -256,7 +258,7 @@ class CountryControllerTest {
 
         ResultActions response3 = mockMvc.perform(
                 get(
-                        URLUtils.builder("/geo/countries/all")
+                        URLUtils.builder(BASE_URL)
                                 .addQueryParameter("name", "А", false)
                                 .build()
                 )
