@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * @author Tribushko Danil
  * @since 02.01.2026
@@ -25,6 +28,9 @@ public class City extends BaseEntity implements BaseNameEntity {
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "country", nullable = false)
     private Country country;
+
+    @OneToMany(mappedBy = "city", cascade = CascadeType.ALL)
+    private Set<Location> locations = new HashSet<>();
 
     public City() {
         super();
@@ -60,5 +66,13 @@ public class City extends BaseEntity implements BaseNameEntity {
 
     public void setCountry(Country country) {
         this.country = country;
+    }
+
+    public Set<Location> getLocations() {
+        return locations;
+    }
+
+    public void setLocations(Set<Location> locations) {
+        this.locations = locations;
     }
 }

@@ -17,15 +17,7 @@ public interface RegionSpecification {
      * Поиск по названию и идентификатору страны
      */
     static Specification<Region> byNameAndCountryIdEqual(String name, UUID id) {
-        return (root, cb, cr) -> {
-            if (name == null && id == null) {
-                if (id == null)
-                    throw new NullPointerException("Необходимо указать идентификатор страны");
-                else
-                    throw new NullPointerException("Необходимо указать название региона");
-            }
-
-            return cr.and(
+        return (root, cb, cr) ->  cr.and(
                     cr.equal(
                             cr.lower(root.get("name")),
                             name.toLowerCase()
@@ -36,7 +28,6 @@ public interface RegionSpecification {
                             id
                     )
             );
-        };
     }
 
     /**

@@ -48,6 +48,18 @@ public class URLUtils {
             return this;
         }
 
+        public URLBuilder addQueryParameter(String key, Object value) {
+            if (!url.toString().contains("?")) {
+                url.append("?");
+            } else {
+                url.append("&");
+            }
+
+            url.append(key).append("=").append(value.toString());
+
+            return this;
+        }
+
         public String build() {
             return url.toString();
         }

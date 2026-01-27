@@ -16,6 +16,7 @@ import ru.tdd.geo.database.entities.Location;
 import ru.tdd.geo.database.repositories.CityRepository;
 import ru.tdd.geo.database.repositories.CountryRepository;
 import ru.tdd.geo.database.repositories.LocationRepository;
+import ru.tdd.geo.database.specifications.LocationSpecification;
 import ru.tdd.geo.database.specifications.NameSpecification;
 
 import java.util.List;
@@ -148,31 +149,45 @@ public class LocationRepositoryTest {
     }
 
     @Test
-    void findByNameTest() {
+    void findByNameAndCityTest() {
         Country country = new Country("Find By Name Country Test");
-        City city = new City("Find By Name City Test", null, country);
+        City city1 = new City("Find By Name City Test", null, country);
+        City city2 = new City("Moscow", null, country);
 
-        Location location1 = new Location("Test location", city);
-        Location location2 = new Location("loc", city);
-        Location location3 = new Location("testing", city);
+        Location location1 = new Location("Test location", city1);
+        Location location2 = new Location("loc", city2);
+        Location location3 = new Location("testing", city1);
 
         countryRepository.save(country);
-        cityRepository.save(city);
+        cityRepository.saveAll(List.of(city1, city2));
         locationRepository.saveAll(List.of(location1, location2, location3));
 
-        List<Location> locations1 = locationRepository.findAll(NameSpecification.byNameWithFullTextSearch("Loc"));
-        List<Location> locations2 = locationRepository.findAll(NameSpecification.byNameWithFullTextSearch("tESt"));
-        List<Location> locations3 = locationRepository.findAll(NameSpecification.byNameWithFullTextSearch("TeSTinG"));
-        List<Location> locations4 = locationRepository.findAll(NameSpecification.byNameWithFullTextSearch("Qwerty"));
+        List<Location> locations1 = locationRepository.findAll(
+                LocationSpecification.byNameAndCityNameFulltextSearch(
+                        "Loc",
+                        "cit"
+                )
+        );
 
-        Assertions.assertEquals(2, locations1.size());
+        List<Location> locations2 = locationRepository.findAll(
+                LocationSpecification.byNameAndCityNameFulltextSearch("tESt", null)
+        );
+
+        List<Location> locations3 = locationRepository.findAll(
+                LocationSpecification.byNameAndCityNameFulltextSearch(null, "ciTy TesT")
+        );
+        List<Location> locations4 = locationRepository.findAll(
+                LocationSpecification.byNameAndCityNameFulltextSearch(null, null)
+        );
+
+        Assertions.assertEquals(1, locations1.size());
         Assertions.assertEquals(2, locations2.size());
-        Assertions.assertEquals(1, locations3.size());
-        Assertions.assertEquals(0, locations4.size());
+        Assertions.assertEquals(2, locations3.size());
+        Assertions.assertEquals(3, locations4.size());
     }
 
     @Test
-    void existsByNameTest() {
+    void existsTest() {
         Country country = new Country("Exists By Name Country Test");
         City city = new City("EXists By Name City Test", null, country);
 
@@ -183,8 +198,30 @@ public class LocationRepositoryTest {
         cityRepository.save(city);
         locationRepository.saveAll(List.of(location1, location2));
 
-        Assertions.assertTrue(locationRepository.exists(NameSpecification.byNameEqual("test exists by name")));
-        Assertions.assertTrue(locationRepository.exists(NameSpecification.byNameEqual("LOCATION")));
-        Assertions.assertFalse(locationRepository.exists(NameSpecification.byNameEqual("New location")));
+        Assertions.assertTrue(
+                locationRepository.exists(
+                        LocationSpecification.byNameAndCityIdEqual(
+                                "test exists by name", city.getId()
+                        )
+                )
+        );
+
+        Assertions.assertTrue(
+                locationRepository.exists(
+                        LocationSpecification.byNameAndCityIdEqual("LOCATION", city.getId())
+                )
+        );
+
+        Assertions.assertFalse(
+                locationRepository.exists(
+                        LocationSpecification.byNameAndCityIdEqual("New location", city.getId())
+                )
+        );
+
+        Assertions.assertFalse(
+                locationRepository.exists(
+                        LocationSpecification.byNameAndCityIdEqual("LOCATION", UUID.randomUUID())
+                )
+        );
     }
 }

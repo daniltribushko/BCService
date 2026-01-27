@@ -2,7 +2,6 @@ package ru.tdd.geo.application.models.dto.geo.country;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import ru.tdd.geo.database.entities.Country;
 
 import java.time.ZoneId;
 
@@ -13,7 +12,7 @@ import java.time.ZoneId;
  */
 public class CreateCountryDTO {
 
-    @NotBlank(message = "Имя страны не может быть пустым")
+    @NotBlank(message = "Название страны не может быть пустым")
     private String name;
 
     @NotNull(message = "Часовой пояс не может быть пустым")

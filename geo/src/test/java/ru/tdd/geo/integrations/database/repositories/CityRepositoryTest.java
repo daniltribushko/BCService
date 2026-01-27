@@ -13,8 +13,11 @@ import org.testcontainers.shaded.org.checkerframework.checker.units.qual.C;
 import ru.tdd.geo.TestcontainersConfiguration;
 import ru.tdd.geo.database.entities.City;
 import ru.tdd.geo.database.entities.Country;
+import ru.tdd.geo.database.entities.Region;
 import ru.tdd.geo.database.repositories.CityRepository;
 import ru.tdd.geo.database.repositories.CountryRepository;
+import ru.tdd.geo.database.repositories.RegionRepository;
+import ru.tdd.geo.database.specifications.CitySpecification;
 import ru.tdd.geo.database.specifications.NameSpecification;
 
 import java.util.List;
@@ -39,14 +42,18 @@ public class CityRepositoryTest {
     @Autowired
     private CountryRepository countryRepository;
 
+    @Autowired
+    private RegionRepository regionRepository;
+
     @BeforeEach
     void cleanDb() {
         cityRepository.deleteAll();
+        regionRepository.deleteAll();
         countryRepository.deleteAll();
     }
 
     @Test
-    public void saveTest() {
+    void saveTest() {
         Country country = new Country("Test Country Save");
         City city = new City("Test City Save", null, country);
         country.getCities().add(city);
@@ -59,7 +66,7 @@ public class CityRepositoryTest {
     }
 
     @Test
-    public void deleteTest() {
+    void deleteTest() {
         Country country = new Country("Test Country Delete ");
         City city = new City("Test City Delete", null, country);
         countryRepository.save(country);
@@ -73,7 +80,7 @@ public class CityRepositoryTest {
     }
 
     @Test
-    public void findByIdTest() {
+    void findByIdTest() {
         Country country = new Country("Test Country Find By Id");
 
         City city1 = new City("Test City Find By Id 1", null, country);
@@ -157,27 +164,120 @@ public class CityRepositoryTest {
     }
 
     @Test
-    void existsByNameTest() {
-        Country country = new Country("Exist By name Test Country");
+    void existsByNameAndRegionAndCityTest() {
+        Country country1 = new Country("Test Country 1");
+        Country country2 = new Country("Test Country 2");
 
-        countryRepository.save(country);
+        countryRepository.saveAll(List.of(country1, country2));
 
-        City city1 = new City("Oslo", null, country);
-        City city2 = new City("PEKIN", null, country);
-        City city3 = new City("MosCoW", null, country);
+        Region region = new Region("Test Region", country2);
+
+        regionRepository.save(region);
+
+        City city1 = new City("Oslo", null, country1);
+        City city2 = new City("PEKIN", region, country2);
+        City city3 = new City("MosCoW", null, country2);
 
         cityRepository.saveAll(List.of(city1, city2, city3));
 
-        Assertions.assertTrue(cityRepository.exists(NameSpecification.byNameEqual("oslo")));
-        Assertions.assertTrue(cityRepository.exists(NameSpecification.byNameEqual("oSlO")));
-        Assertions.assertFalse(cityRepository.exists(NameSpecification.byNameEqual("os")));
+        Assertions.assertTrue(
+                cityRepository.exists(
+                        CitySpecification.byNameRegionCityEqual(
+                                "oslo",
+                                null,
+                                country1.getId()
+                        )
+                )
+        );
 
-        Assertions.assertTrue(cityRepository.exists(NameSpecification.byNameEqual("pEkIn")));
-        Assertions.assertTrue(cityRepository.exists(NameSpecification.byNameEqual("pekin")));
-        Assertions.assertFalse(cityRepository.exists(NameSpecification.byNameEqual("PEKinn")));
+        Assertions.assertTrue(
+                cityRepository.exists(
+                        CitySpecification.byNameRegionCityEqual(
+                                "oSlO",
+                                null,
+                                country1.getId()
+                        )
+                )
+        );
 
-        Assertions.assertTrue(cityRepository.exists(NameSpecification.byNameEqual("moscow")));
-        Assertions.assertTrue(cityRepository.exists(NameSpecification.byNameEqual("MOSCOW")));
-        Assertions.assertFalse(cityRepository.exists(NameSpecification.byNameEqual("mmoscoww")));
+        Assertions.assertFalse(
+                cityRepository.exists(
+                        CitySpecification.byNameRegionCityEqual(
+                                "os",
+                                null,
+                                country1.getId()
+                        )
+                )
+        );
+
+        Assertions.assertTrue(
+                cityRepository.exists(
+                        CitySpecification.byNameRegionCityEqual(
+                                "pEkIn",
+                                region.getId(),
+                                country2.getId()
+                        )
+                )
+        );
+
+        Assertions.assertTrue(
+                cityRepository.exists(
+                        CitySpecification.byNameRegionCityEqual(
+                                "pekin",
+                                region.getId(),
+                                country2.getId()
+                        )
+                )
+        );
+
+        Assertions.assertFalse(
+                cityRepository.exists(
+                        CitySpecification.byNameRegionCityEqual(
+                                "pekin",
+                                null,
+                                country2.getId()
+                        )
+                )
+        );
+
+        Assertions.assertFalse(
+                cityRepository.exists(
+                        CitySpecification.byNameRegionCityEqual(
+                                "PEKinn",
+                                null,
+                                country2.getId()
+                        )
+                )
+        );
+
+        Assertions.assertTrue(
+                cityRepository.exists(
+                        CitySpecification.byNameRegionCityEqual(
+                                "moscow",
+                                null,
+                                country2.getId()
+                        )
+                )
+        );
+
+        Assertions.assertTrue(
+                cityRepository.exists(
+                        CitySpecification.byNameRegionCityEqual(
+                                "MOSCOW",
+                                null,
+                                country2.getId()
+                        )
+                )
+        );
+
+        Assertions.assertFalse(
+                cityRepository.exists(
+                        CitySpecification.byNameRegionCityEqual(
+                                "mmoscoww",
+                                null,
+                                country2.getId()
+                        )
+                )
+        );
     }
 }

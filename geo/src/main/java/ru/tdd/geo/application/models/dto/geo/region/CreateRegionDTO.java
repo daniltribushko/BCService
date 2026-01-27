@@ -1,5 +1,8 @@
 package ru.tdd.geo.application.models.dto.geo.region;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.util.UUID;
 
 /**
@@ -8,8 +11,10 @@ import java.util.UUID;
  */
 public class CreateRegionDTO {
 
+    @NotBlank(message = "Название региона не может быть пустым")
     private String name;
 
+    @NotNull(message = "Идентификатор страны не может быть пустым")
     private UUID countryId;
 
     public CreateRegionDTO() {}
