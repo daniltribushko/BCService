@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: user
+  datasource:
+    username: root
+    password: 123
+    url: jdbc:postgresql://localhost:5432/bc_user_db
+    driver-class-name: org.postgresql.Driver
+server:
+  port: 8001
+  servlet:
+    context-path: /api/v1
+jwt:
+  secret: feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac
