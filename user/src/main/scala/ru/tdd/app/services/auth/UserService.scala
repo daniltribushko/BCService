@@ -69,6 +69,11 @@ trait UserService {
    * Получение пользователя по идентификатору телеграм
    */
   def getByChatId(chatId: Long): ZIOUserDTO
+
+  /**
+   * Получение пользователя по его имени
+   */
+  def getByUsername(username: String): ZIOUserDTO
 }
 
 class UserServiceImp(db: Database) extends UserService {
@@ -149,5 +154,12 @@ class UserServiceImp(db: Database) extends UserService {
       userOpt <- ZIO.fromFuture(_ => rep.findOne(_.chatId === chatId))
       user <- ZIO.fromOption(userOpt)
         .mapError(_ => NotFoundException("Пользователь с указанным идентификатором телеграмма не найден"))
+    } yield UserDto.fromEntity(user)
+
+  override def getByUsername(username: String): ZIOUserDTO =
+    for {
+      userOpt <- ZIO.fromFuture(_ => rep.findOne(_.username === username))
+      user <- ZIO.fromOption(userOpt)
+        .mapError(_ => NotFoundException("Пользователь с указанным именем не найден"))
     } yield UserDto.fromEntity(user)
 }

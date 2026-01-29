@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: geo
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/bc_geo_db
+    username: root
+    password: 123
+  jpa:
+    hibernate:
+      ddl-auto: update
+server:
+  port: 8002
+  servlet:
+    context-path: /api/v1
+services:
+  gateway-port: 8000
+  users:
+    host: http://localhost
+    name: users
+jwt:
+  secret: feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac

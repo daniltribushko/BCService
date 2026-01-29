@@ -132,6 +132,18 @@ object UserRoutes {
                 ZIO.succeed(Response.text("Необходимо указать только 1 параметер").status(Status.BadRequest))
             }
           }
+        },
+      Method.GET / "users" ->
+        handler {
+          req: Request => {
+            req.query[String]("username") match {
+              case Right(username) =>
+                service.getByUsername(username).map(dto => Response.json(dto.toJson).status(Status.Ok))
+                  .catchAll(ex => ZIO.succeed(Response.text(ex.getMessage).status(Status.BadRequest)))
+              case Left(_) =>
+                ZIO.succeed(Response.status(Status.BadRequest))
+            }
+          }
         }
     )
   }
