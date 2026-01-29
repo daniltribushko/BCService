@@ -1,5 +1,6 @@
 package ru.tdd.geo.application.models.dto.geo.country;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -12,17 +13,19 @@ import java.time.ZoneId;
  */
 public class CreateCountryDTO {
 
+    @Schema(
+            name = "name",
+            description = "Название страны",
+            example = "Russia",
+            type = "string"
+    )
     @NotBlank(message = "Название страны не может быть пустым")
     private String name;
 
-    @NotNull(message = "Часовой пояс не может быть пустым")
-    private ZoneId zoneId;
-
     public CreateCountryDTO() {}
 
-    public CreateCountryDTO(String name, ZoneId zoneId) {
+    public CreateCountryDTO(String name) {
         this.name = name;
-        this.zoneId = zoneId;
     }
 
     public String getName() {
@@ -31,13 +34,5 @@ public class CreateCountryDTO {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public ZoneId getZoneId() {
-        return zoneId;
-    }
-
-    public void setZoneId(ZoneId zoneId) {
-        this.zoneId = zoneId;
     }
 }

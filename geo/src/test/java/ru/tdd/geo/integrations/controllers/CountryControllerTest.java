@@ -58,7 +58,7 @@ class CountryControllerTest {
     @Test
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     void createTest() throws Exception {
-        CreateCountryDTO createDto = new CreateCountryDTO("New Country", ZoneId.systemDefault());
+        CreateCountryDTO createDto = new CreateCountryDTO("New Country");
 
         ResultActions response = mockMvc.perform(post(BASE_URL)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -67,14 +67,13 @@ class CountryControllerTest {
 
         response.andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", isA(String.class)))
-                .andExpect(jsonPath("$.name", is(createDto.getName())))
-                .andExpect(jsonPath("$.zoneId", is(ZoneId.systemDefault().getId())));
+                .andExpect(jsonPath("$.name", is(createDto.getName())));
     }
 
     @Test
     @WithMockUser(username = "not_admin")
     void createNotAdminFailTest() throws Exception {
-        CreateCountryDTO createDto = new CreateCountryDTO("New Country", ZoneId.systemDefault());
+        CreateCountryDTO createDto = new CreateCountryDTO("New Country");
 
         ResultActions response = mockMvc.perform(post(BASE_URL)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -89,7 +88,7 @@ class CountryControllerTest {
     void createAlreadyExistsFailTest() throws Exception {
         countryRepository.save(new Country("Already Exists Country"));
 
-        CreateCountryDTO createDto = new CreateCountryDTO("Already Exists Country", ZoneId.systemDefault());
+        CreateCountryDTO createDto = new CreateCountryDTO("Already Exists Country");
 
         ResultActions response = mockMvc.perform(
                 post(BASE_URL)
@@ -112,13 +111,12 @@ class CountryControllerTest {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + country.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateCountryDTO("New Country Name", null)))
+                        .content(DTOMapper.toJson(new UpdateCountryDTO("New Country Name")))
         );
 
         response.andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(country.getId().toString())))
-                .andExpect(jsonPath("$.name", is("New Country Name")))
-                .andExpect(jsonPath("$.zoneId", is(ZoneId.systemDefault().getId())));
+                .andExpect(jsonPath("$.name", is("New Country Name")));
     }
 
     @Test
@@ -126,7 +124,7 @@ class CountryControllerTest {
     void updateNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
-                        .content(DTOMapper.toJson(new UpdateCountryDTO(null, null)))
+                        .content(DTOMapper.toJson(new UpdateCountryDTO(null)))
                         .contentType(MediaType.APPLICATION_JSON)
         );
 
@@ -139,7 +137,7 @@ class CountryControllerTest {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateCountryDTO(null, null)))
+                        .content(DTOMapper.toJson(new UpdateCountryDTO(null)))
         );
 
         response.andExpect(status().isNotFound())
@@ -160,7 +158,7 @@ class CountryControllerTest {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + country1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateCountryDTO("Already Exists Country", null)))
+                        .content(DTOMapper.toJson(new UpdateCountryDTO("Already Exists Country")))
         );
 
         response.andExpect(status().isConflict())
@@ -206,7 +204,6 @@ class CountryControllerTest {
     @WithMockUser(username = "user")
     void findByIdSuccessTest() throws Exception {
         Country country = new Country("Test Country Find By Id");
-        country.setZoneId(ZoneId.of("Europe/Moscow"));
         countryRepository.save(country);
 
         ResultActions response = mockMvc.perform(
@@ -215,8 +212,7 @@ class CountryControllerTest {
 
         response.andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(country.getId().toString())))
-                .andExpect(jsonPath("$.name", is("Test Country Find By Id")))
-                .andExpect(jsonPath("$.zoneId", is("Europe/Moscow")));
+                .andExpect(jsonPath("$.name", is("Test Country Find By Id")));
     }
 
     @Test

@@ -1,5 +1,8 @@
 package ru.tdd.geo.application.models.dto.geo.location;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import ru.tdd.geo.application.models.constants.OpenApiConstants;
+
 import java.util.UUID;
 
 /**
@@ -9,8 +12,23 @@ import java.util.UUID;
  */
 public class UpdateLocationDTO {
 
+    @Schema(
+            name = "name",
+            description = "Название локации",
+            type = "string",
+            example = "Test Location",
+            nullable = true
+    )
     private String name;
 
+    @Schema(
+            name = "city_id",
+            description = "Идентификатор города локации",
+            type = "string",
+            format = "uuid",
+            example = OpenApiConstants.UUID_EXAMPLE,
+            nullable = true
+    )
     private UUID cityId;
 
     public UpdateLocationDTO() {}

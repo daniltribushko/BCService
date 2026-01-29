@@ -41,9 +41,8 @@ public class CountryServiceImp implements CountryService {
             throw new CountryAlreadyExistsException();
         }
         Country country = new Country(name);
-        country.setZoneId(createDTO.getZoneId());
         countryRepository.save(country);
-        return new CountryDTO(country.getId(), country.getName(), country.getZoneId());
+        return new CountryDTO(country.getId(), country.getName());
     }
 
     @Override
@@ -61,11 +60,9 @@ public class CountryServiceImp implements CountryService {
                 throw new CountryAlreadyExistsException();
         }
 
-        Optional.ofNullable(updateDTO.getZoneId()).ifPresent(country::setZoneId);
-
         countryRepository.save(country);
 
-        return new CountryDTO(country.getId(), country.getName(), country.getZoneId());
+        return new CountryDTO(country.getId(), country.getName());
     }
 
     @Override

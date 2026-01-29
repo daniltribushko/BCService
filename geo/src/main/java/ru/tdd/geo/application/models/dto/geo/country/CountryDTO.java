@@ -1,5 +1,7 @@
 package ru.tdd.geo.application.models.dto.geo.country;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import ru.tdd.geo.application.models.constants.OpenApiConstants;
 import ru.tdd.geo.database.entities.Country;
 
 import java.time.ZoneId;
@@ -12,25 +14,34 @@ import java.util.UUID;
  */
 public class CountryDTO {
 
+    @Schema(
+            name = "id",
+            description = "Идентификатор страны",
+            type = "string",
+            format = "uuid",
+            example = OpenApiConstants.UUID_EXAMPLE
+    )
     private UUID id;
 
+    @Schema(
+            name = "name",
+            description = "Название страны",
+            type = "string",
+            example = "Russia"
+    )
     private String name;
-
-    private ZoneId zoneId;
 
     public CountryDTO() {}
 
-    public CountryDTO(UUID id, String name, ZoneId zoneId) {
+    public CountryDTO(UUID id, String name) {
         this.id = id;
         this.name = name;
-        this.zoneId = zoneId;
     }
 
     public static CountryDTO mapFromEntity(Country country) {
         return new CountryDTO(
                 country.getId(),
-                country.getName(),
-                country.getZoneId()
+                country.getName()
         );
     }
 
@@ -50,11 +61,4 @@ public class CountryDTO {
         this.name = name;
     }
 
-    public ZoneId getZoneId() {
-        return zoneId;
-    }
-
-    public void setZoneId(ZoneId zoneId) {
-        this.zoneId = zoneId;
-    }
 }

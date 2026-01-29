@@ -1,5 +1,13 @@
 package ru.tdd.geo.controller.rest_controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.tags.Tags;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -8,6 +16,7 @@ import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 import ru.tdd.geo.application.models.dto.geo.city.*;
 import ru.tdd.geo.application.services.CityService;
+import ru.tdd.geo.controller.config.OpenApiConfig;
 
 import java.util.UUID;
 
@@ -18,6 +27,8 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/geo/cities")
+@Tag(name = OpenApiConfig.CITY_CONTROLLER)
+@SecurityRequirement(name = "jwtAuth")
 public class CityController {
 
     private final CityService cityService;
@@ -29,6 +40,17 @@ public class CityController {
         this.cityService = cityService;
     }
 
+    @Operation(summary = "Create", description = "Создание города, доступно для администратора")
+    @ApiResponses(
+            value = {
+                    @ApiResponse(
+                            responseCode = "201", description = "Город успешно создан",
+                            content = @Content(
+                                    mediaType = "appliction"
+                            )
+                    )
+            }
+    )
     @PostMapping
     @Secured(value = "ROLE_ADMIN")
     public ResponseEntity<CityDTO> create(

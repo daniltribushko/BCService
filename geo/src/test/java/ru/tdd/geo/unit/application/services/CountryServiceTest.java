@@ -47,13 +47,12 @@ class CountryServiceTest {
         Mockito.when(countryRepository.exists(any(Specification.class))).thenReturn(false);
 
         CountryDTO actual = countryServiceImp.create(
-                new CreateCountryDTO("Test Create Country 1", ZoneId.systemDefault())
+                new CreateCountryDTO("Test Create Country 1")
         );
 
         Mockito.verify(countryRepository).exists(any(Specification.class));
         Mockito.verify(countryRepository).save(any(Country.class));
         Assertions.assertEquals("Test Create Country 1", actual.getName());
-        Assertions.assertEquals(ZoneId.systemDefault(), actual.getZoneId());
     }
 
     @Test
@@ -62,7 +61,7 @@ class CountryServiceTest {
 
         AlreadyExistsException actual = Assertions.assertThrows(
                 AlreadyExistsException.class,
-                () -> countryServiceImp.create(new CreateCountryDTO("", null))
+                () -> countryServiceImp.create(new CreateCountryDTO(""))
         );
 
         Mockito.verify(countryRepository).exists(any(Specification.class));
@@ -79,7 +78,7 @@ class CountryServiceTest {
         Mockito.when(countryRepository.findById(id)).thenReturn(Optional.of(country));
         Mockito.when(countryRepository.exists(any(Specification.class))).thenReturn(false);
 
-        CountryDTO actual = countryServiceImp.update(id, new UpdateCountryDTO("New Country Name", null));
+        CountryDTO actual = countryServiceImp.update(id, new UpdateCountryDTO("New Country Name"));
 
         Mockito.verify(countryRepository).findById(id);
         Mockito.verify(countryRepository).exists(any(Specification.class));
@@ -96,7 +95,7 @@ class CountryServiceTest {
 
         NotFoundException actual = Assertions.assertThrows(
                 NotFoundException.class,
-                () -> countryServiceImp.update(id, new UpdateCountryDTO("Not Found Country", null))
+                () -> countryServiceImp.update(id, new UpdateCountryDTO("Not Found Country"))
         );
 
         Mockito.verify(countryRepository).findById(id);
@@ -114,7 +113,7 @@ class CountryServiceTest {
 
         AlreadyExistsException actual = Assertions.assertThrows(
                 AlreadyExistsException.class,
-                () -> countryServiceImp.update(id, new UpdateCountryDTO("New Country", null))
+                () -> countryServiceImp.update(id, new UpdateCountryDTO("New Country"))
         );
 
         Mockito.verify(countryRepository).exists(any(Specification.class));

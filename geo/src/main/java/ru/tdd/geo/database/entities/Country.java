@@ -20,9 +20,6 @@ public class Country extends BaseEntity implements BaseNameEntity {
     @Column(name = "name", unique = true, nullable = false)
     private String name;
 
-    @Column(name = "zone_id", nullable = false)
-    private ZoneId zoneId = ZoneId.systemDefault();
-
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "country")
     private Set<Region> regions = new HashSet<>();
 
@@ -31,9 +28,8 @@ public class Country extends BaseEntity implements BaseNameEntity {
 
     public Country() {}
 
-    public Country(String name, ZoneId zoneId, Set<Region> regions, Set<City> cities) {
+    public Country(String name, Set<Region> regions, Set<City> cities) {
         this.name = name;
-        this.zoneId = zoneId;
         this.regions = regions;
         this.cities = cities;
     }
@@ -62,14 +58,6 @@ public class Country extends BaseEntity implements BaseNameEntity {
     @Override
     public void setName(String name) {
         this.name = name;
-    }
-
-    public ZoneId getZoneId() {
-        return zoneId;
-    }
-
-    public void setZoneId(ZoneId zoneId) {
-        this.zoneId = zoneId;
     }
 
     public Set<Region> getRegions() {

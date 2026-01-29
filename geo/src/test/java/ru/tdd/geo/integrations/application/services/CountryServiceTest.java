@@ -47,7 +47,7 @@ public class CountryServiceTest {
     @Transactional
     void saveSuccessTest() {
         long expectedCount = countryRepository.count() + 1;
-        CountryDTO countryDTO = countryService.create(new CreateCountryDTO("New Country", ZoneId.systemDefault()));
+        CountryDTO countryDTO = countryService.create(new CreateCountryDTO("New Country"));
         long actualCount = countryRepository.count();
 
         Assertions.assertEquals("New Country", countryDTO.getName());
@@ -61,7 +61,7 @@ public class CountryServiceTest {
 
         AlreadyExistsException actual = Assertions.assertThrows(
                 AlreadyExistsException.class,
-                () -> countryService.create(new CreateCountryDTO("Already Exists Country", ZoneId.systemDefault()))
+                () -> countryService.create(new CreateCountryDTO("Already Exists Country"))
         );
 
         Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
@@ -81,30 +81,27 @@ public class CountryServiceTest {
 
         CountryDTO actualUpdateName = countryService.update(
                 country1.getId(),
-                new UpdateCountryDTO("New Country Name", null)
+                new UpdateCountryDTO("New Country Name")
         );
 
         CountryDTO actualUpdateZoneId = countryService.update(
                 country2.getId(),
-                new UpdateCountryDTO(null, ZoneId.of("Europe/Moscow"))
+                new UpdateCountryDTO(null)
         );
 
         CountryDTO actualWithNulls = countryService.update(
                 country3.getId(),
-                new UpdateCountryDTO(null, null)
+                new UpdateCountryDTO(null)
         );
 
         Assertions.assertEquals(country1.getId(), actualUpdateName.getId());
         Assertions.assertEquals("New Country Name", actualUpdateName.getName());
-        Assertions.assertEquals(country1.getZoneId(), actualUpdateName.getZoneId());
 
         Assertions.assertEquals(country2.getId(), actualUpdateZoneId.getId());
         Assertions.assertEquals("Country For Update Time Zone", country2.getName());
-        Assertions.assertEquals(ZoneId.of("Europe/Moscow"), country2.getZoneId());
 
         Assertions.assertEquals(country3.getId(), actualWithNulls.getId());
         Assertions.assertEquals(country3.getName(), actualWithNulls.getName());
-        Assertions.assertEquals(country3.getZoneId(), actualWithNulls.getZoneId());
     }
 
     @Test
@@ -118,7 +115,7 @@ public class CountryServiceTest {
 
         AlreadyExistsException actual = Assertions.assertThrows(
                 AlreadyExistsException.class,
-                () -> countryService.update(country2.getId(), new UpdateCountryDTO("Already Exists Country", null))
+                () -> countryService.update(country2.getId(), new UpdateCountryDTO("Already Exists Country"))
         );
 
         Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());

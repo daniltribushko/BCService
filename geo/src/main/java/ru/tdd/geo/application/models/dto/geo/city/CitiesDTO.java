@@ -1,5 +1,7 @@
 package ru.tdd.geo.application.models.dto.geo.city;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.List;
 
 /**
@@ -9,6 +11,10 @@ import java.util.List;
  */
 public class CitiesDTO {
 
+    @Schema(
+            name = "data",
+            description = "Список городов"
+    )
     private List<CityDTO> data;
 
     public CitiesDTO() {}

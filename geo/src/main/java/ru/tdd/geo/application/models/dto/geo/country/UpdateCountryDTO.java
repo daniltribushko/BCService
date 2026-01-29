@@ -1,6 +1,6 @@
 package ru.tdd.geo.application.models.dto.geo.country;
 
-import java.time.ZoneId;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * @author Tribushko Danil
@@ -9,15 +9,19 @@ import java.time.ZoneId;
  */
 public class UpdateCountryDTO {
 
+    @Schema(
+            name = "name",
+            description = "Название страны",
+            example = "Russia",
+            type = "string",
+            nullable = true
+    )
     private String name;
-
-    private ZoneId zoneId;
 
     public UpdateCountryDTO() {}
 
-    public UpdateCountryDTO(String name, ZoneId zoneId) {
+    public UpdateCountryDTO(String name) {
         this.name = name;
-        this.zoneId = zoneId;
     }
 
     public String getName() {
@@ -28,11 +32,4 @@ public class UpdateCountryDTO {
         this.name = name;
     }
 
-    public ZoneId getZoneId() {
-        return zoneId;
-    }
-
-    public void setZoneId(ZoneId zoneId) {
-        this.zoneId = zoneId;
-    }
 }

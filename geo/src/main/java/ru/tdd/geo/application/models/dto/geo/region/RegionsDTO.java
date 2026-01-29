@@ -1,5 +1,7 @@
 package ru.tdd.geo.application.models.dto.geo.region;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.List;
 
 /**
@@ -9,6 +11,10 @@ import java.util.List;
  */
 public class RegionsDTO {
 
+    @Schema(
+            name = "data",
+            description = "Список регионов"
+    )
     private List<RegionDTO> data;
 
     public RegionsDTO() {}

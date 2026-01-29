@@ -1,5 +1,7 @@
 package ru.tdd.geo.application.models.dto.geo.country;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import ru.tdd.geo.application.models.constants.OpenApiConstants;
 import ru.tdd.geo.application.models.dto.geo.region.RegionDTO;
 import ru.tdd.geo.database.entities.Country;
 
@@ -14,20 +16,30 @@ import java.util.stream.Collectors;
  */
 public class CountryDetailsDTO {
 
+    @Schema(
+            name = "id",
+            description = "Идентификатор страны",
+            type = "string",
+            example = OpenApiConstants.UUID_EXAMPLE,
+            format = "uuid"
+    )
     private UUID id;
 
+    @Schema(
+            name = "name",
+            description = "Название страны",
+            type = "string",
+            example = "Russia"
+    )
     private String name;
-
-    private ZoneId zoneId;
 
     private List<RegionDTO> regions;
 
     public CountryDetailsDTO() {}
 
-    public CountryDetailsDTO(UUID id, String name, ZoneId zoneId, List<RegionDTO> regions) {
+    public CountryDetailsDTO(UUID id, String name, List<RegionDTO> regions) {
         this.id = id;
         this.name = name;
-        this.zoneId = zoneId;
         this.regions = regions;
     }
 
@@ -35,7 +47,6 @@ public class CountryDetailsDTO {
         return new CountryDetailsDTO(
                 country.getId(),
                 country.getName(),
-                country.getZoneId(),
                 country.getRegions().stream().map(RegionDTO::mapFromEntity)
                         .sorted(Comparator.comparing(RegionDTO::getName))
                         .toList()
@@ -57,14 +68,6 @@ public class CountryDetailsDTO {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public ZoneId getZoneId() {
-        return zoneId;
-    }
-
-    public void setZoneId(ZoneId zoneId) {
-        this.zoneId = zoneId;
     }
 
     public List<RegionDTO> getRegions() {

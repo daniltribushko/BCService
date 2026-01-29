@@ -21,14 +21,12 @@ class CountryDTOMapperTest {
         CountryDTO actual = DTOMapper.fromJson(
                 "{" +
                         "\"id\":\"e7b3c1f8-2a4d-4f6c-9b12-8d5e3a1c7f29\"," +
-                        "\"name\":\"Test Mapper Country\"," +
-                        "\"zoneId\":\"Europe/Moscow\"" +
+                        "\"name\":\"Test Mapper Country\"" +
                         "}",
                 CountryDTO.class);
 
         Assertions.assertEquals(UUID.fromString("e7b3c1f8-2a4d-4f6c-9b12-8d5e3a1c7f29"), actual.getId());
         Assertions.assertEquals("Test Mapper Country", actual.getName());
-        Assertions.assertEquals(ZoneId.of("Europe/Moscow"), actual.getZoneId());
     }
 
     @Test
@@ -37,15 +35,14 @@ class CountryDTOMapperTest {
         String actual = DTOMapper.toJson(
                 new CountryDTO(
                         UUID.fromString("93003560-55ab-421c-8a62-56a89aa69471"),
-                        "Test Json Country",
-                        ZoneId.of("Asia/Yekaterinburg"))
+                        "Test Json Country"
+                )
         );
 
         Assertions.assertEquals(
                 "{" +
                         "\"id\":\"93003560-55ab-421c-8a62-56a89aa69471\"," +
-                        "\"name\":\"Test Json Country\"," +
-                        "\"zoneId\":\"Asia/Yekaterinburg\"" +
+                        "\"name\":\"Test Json Country\"" +
                         "}",
                 actual
         );

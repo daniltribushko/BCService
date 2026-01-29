@@ -1,6 +1,8 @@
 package ru.tdd.geo.application.models.dto.geo.city;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import ru.tdd.geo.application.models.constants.OpenApiConstants;
 
 import java.util.UUID;
 
@@ -11,11 +13,31 @@ import java.util.UUID;
  */
 public class CreateCityDTO {
 
+    @Schema(
+            name = "name",
+            description = "Название города"
+    )
     @NotBlank(message = "Название города обязательно для заполнения")
     private String name;
 
+    @Schema(
+            name = "region_id",
+            description = "Идентификатор региона",
+            type = "string",
+            format = "uuid",
+            example = OpenApiConstants.UUID_EXAMPLE,
+            nullable = true
+    )
     private UUID regionId;
 
+    @Schema(
+            name = "country_id",
+            description = "Идентификатор страны",
+            type = "string",
+            format = "uuid",
+            example = OpenApiConstants.UUID_EXAMPLE
+    )
+    @NotBlank(message = "Идентификатор страны обязателен для заполнения")
     private UUID countryId;
 
     public CreateCityDTO() {}

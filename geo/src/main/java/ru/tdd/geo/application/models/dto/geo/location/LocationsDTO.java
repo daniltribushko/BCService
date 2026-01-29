@@ -1,5 +1,6 @@
 package ru.tdd.geo.application.models.dto.geo.location;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import ru.tdd.geo.database.entities.Location;
 
 import java.util.List;
@@ -11,6 +12,10 @@ import java.util.List;
  */
 public class LocationsDTO {
 
+    @Schema(
+            name = "data",
+            description = "Список локаций"
+    )
     private List<LocationDTO> data;
 
     public LocationsDTO() {}

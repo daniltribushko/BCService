@@ -1,5 +1,8 @@
 package ru.tdd.geo.application.models.dto.geo.region;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import ru.tdd.geo.application.models.constants.OpenApiConstants;
+
 import java.util.UUID;
 
 /**
@@ -9,8 +12,23 @@ import java.util.UUID;
  */
 public class UpdateRegionDTO {
 
+    @Schema(
+            name = "name",
+            description = "Название региона",
+            type = "string",
+            example = "Moscow Oblast",
+            nullable = true
+    )
     private String name;
 
+    @Schema(
+            name = "country_id",
+            description = "Идентификатор страны региона",
+            type = "String",
+            format = "uuid",
+            example = OpenApiConstants.UUID_EXAMPLE,
+            nullable = true
+    )
     private UUID countryId;
 
     public UpdateRegionDTO() {}
