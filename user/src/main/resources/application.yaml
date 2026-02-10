@@ -6,9 +6,18 @@ spring:
     password: 123
     url: jdbc:postgresql://localhost:5432/bc_user_db
     driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
 server:
   port: 8001
   servlet:
     context-path: /api/v1
 jwt:
   secret: feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac
+springdoc:
+  swagger-ui:
+    path: /docs/swagger-ui.html
+    url: /docs
+  api-docs:
+    path: /docs
