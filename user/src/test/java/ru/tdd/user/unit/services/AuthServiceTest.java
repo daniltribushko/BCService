@@ -54,6 +54,9 @@ class AuthServiceTest {
     @Mock
     private UserDetailsService userDetailsService;
 
+    @Mock
+    private AuthenticationManager authenticationManager;
+
     @InjectMocks
     private AuthServiceImp authService;
 
@@ -142,7 +145,7 @@ class AuthServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
-        Assertions.assertEquals("Пользаватель с указанным идентификатором ителеграма уже найден", actual.getMessage());
+        Assertions.assertEquals("Пользаватель с указанным идентификатором телеграма уже найден", actual.getMessage());
     }
 
     @Test

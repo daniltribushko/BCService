@@ -18,7 +18,7 @@ public class RoleConverter implements AttributeConverter<List<Role>, String> {
     @Override
     public String convertToDatabaseColumn(List<Role> attribute) {
         return attribute.stream()
-                .map(Role::name)
+                .map(Role::toString)
                 .collect(Collectors.joining(","));
     }
 

@@ -32,35 +32,14 @@ public class JwtTokenServiceImp implements JwtTokenService {
     public JwtTokenDTO generate(SystemUser user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("id", user.getId());
-        claims.put("system", true);
         claims.put("roles", user.getRoles().stream().map(Role::name).toArray());
 
-        Date issueAt = new Date();
-        Date expiration = DateUtils.plusTime(issueAt, DateUtils.DAY);
-
-        String token = Jwts.builder()
-                .claims(claims)
-                .subject(user.getUsername())
-                .issuedAt(issueAt)
-                .expiration(expiration)
-                .signWith(getSecret())
-                .compact();
-
-        return new JwtTokenDTO(
-                token,
-                expiration.getTime()
-        );
-    }
-
-    @Override
-    public JwtTokenDTO generate(AppUser user) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("id", user.getId());
-        claims.put("system", true);
-        claims.put("roles", user.getRoles().stream().map(Role::name).toArray());
-        claims.put("email", user.getEmail());
-        claims.put("chatId", user.getChatId());
-
+        if (user instanceof AppUser appUser) {
+            claims.put("chatId", appUser.getChatId());
+            claims.put("email", appUser.getEmail());
+            claims.put("system", false);
+        } else
+            claims.put("system", true);
 
         Date issueAt = new Date();
         Date expiration = DateUtils.plusTime(issueAt, DateUtils.DAY);

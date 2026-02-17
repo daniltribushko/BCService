@@ -1,6 +1,7 @@
 package ru.tdd.user.integration.database;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -34,6 +35,11 @@ public class AppUserRepositoryTest {
             AppUserRepository appUserRepository
     ) {
         this.appUserRepository = appUserRepository;
+    }
+
+    @BeforeEach
+    void cleanDb() {
+        appUserRepository.deleteAll();
     }
 
     @Test

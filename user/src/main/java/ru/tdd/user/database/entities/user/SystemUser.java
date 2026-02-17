@@ -47,7 +47,7 @@ public class SystemUser extends EntityVersion implements UserDetails {
 
         private String password;
 
-        private LocalDateTime lastDateOnline;
+        private LocalDateTime lastDateOnline = LocalDateTime.now();
 
         private LocalDateTime creationTime = LocalDateTime.now();
 

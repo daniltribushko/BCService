@@ -1,5 +1,7 @@
 package ru.tdd.user.controller.config;
 
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.tags.Tag;
@@ -13,9 +15,17 @@ import java.util.List;
  * @since 10.02.2026
  */
 @Configuration
+@SecurityScheme(
+        name = "jwtAuth",
+        type = SecuritySchemeType.HTTP,
+        bearerFormat = "JWT",
+        scheme = "bearer"
+)
 public class OpenApiConfig {
 
     public static final String AUTH_CONTROLLER = "Auth Controller";
+
+    public static final String USER_CONTROLLER = "User Controller";
 
     @Bean
     public OpenAPI openAPI() {
@@ -31,7 +41,10 @@ public class OpenApiConfig {
                         List.of(
                                 new Tag()
                                         .name(AUTH_CONTROLLER)
-                                        .description("Контроллер для авторизации и регистрации пользователей")
+                                        .description("Контроллер для авторизации и регистрации пользователей"),
+                                new Tag()
+                                        .name(USER_CONTROLLER)
+                                        .description("Контроллер для работы с пользователями")
                         )
                 );
     }

@@ -102,7 +102,7 @@ public class AuthServiceImp implements AuthService {
 
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(username, signIn.getPassword())
+                    new UsernamePasswordAuthenticationToken(user, signIn.getPassword())
             );
         } catch (AuthenticationException e) {
             throw new RuntimeException(e);
