@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,6 +37,12 @@ public class OpenApiConfig {
                                 .title("User Service")
                                 .version("1.0.0")
                                 .description("Сервис для работы с пользователями")
+                )
+                .servers(
+                        List.of(
+                                new Server()
+                                        .url("/api/v1")
+                        )
                 )
                 .tags(
                         List.of(

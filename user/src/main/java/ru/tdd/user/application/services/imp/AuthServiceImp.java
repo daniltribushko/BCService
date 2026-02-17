@@ -81,7 +81,10 @@ public class AuthServiceImp implements AuthService {
         List<Role> roles = new ArrayList<>();
         roles.add(Role.USER);
 
-        AppUser user = AppUser.appUserBuilder()
+        System.out.println("! - " + username);
+        System.out.println("! - " + password);
+
+        SystemUser user = AppUser.appUserBuilder()
                 .username(username)
                 .password(passwordEncoder.encode(password))
                 .email(email)
@@ -89,7 +92,10 @@ public class AuthServiceImp implements AuthService {
                 .roles(roles)
                 .build();
 
-        appUserRepository.save(user);
+        System.out.println("! - " + user.getUsername());
+        System.out.println("! - " + user.getPassword());
+
+        systemUserRepository.save(user);
 
         return jwtTokenService.generate(user);
     }

@@ -17,7 +17,9 @@ jwt:
   secret: feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac
 springdoc:
   swagger-ui:
-    path: /docs/swagger-ui.html
-    url: /docs
+    path: /users/docs/swagger-ui.html
+    disable-swagger-default-url: true
+    url: /users/docs
   api-docs:
-    path: /docs
+    path: /users/docs
+    enabled: true

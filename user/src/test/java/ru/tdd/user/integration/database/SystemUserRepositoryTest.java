@@ -106,7 +106,7 @@ public class SystemUserRepositoryTest {
                 .roles(List.of(Role.ADMIN))
                 .lastDateOnline(LocalDateTime.now())
                 .password("123")
-                .username("user")
+                .username("user_delete")
                 .build();
 
         systemUserRepository.save(user);
@@ -126,12 +126,12 @@ public class SystemUserRepositoryTest {
                 .roles(List.of(Role.ADMIN))
                 .lastDateOnline(LocalDateTime.now())
                 .password("123")
-                .username("user")
+                .username("exists_user")
                 .build();
 
         systemUserRepository.save(user);
 
-        Assertions.assertTrue(systemUserRepository.existsByUsername("user"));
+        Assertions.assertTrue(systemUserRepository.existsByUsername("exists_user"));
         Assertions.assertFalse(systemUserRepository.existsByUsername("admin"));
     }
 }

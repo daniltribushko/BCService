@@ -12,9 +12,7 @@ import ru.tdd.user.application.models.dto.SignUp;
  */
 public interface AuthService {
 
-    @Transactional
     JwtTokenDTO signUp(SignUp signUp);
 
-    @Transactional
     JwtTokenDTO signIn(SignIn signIn);
 }

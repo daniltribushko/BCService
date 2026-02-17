@@ -2,6 +2,8 @@ package ru.tdd.user.database.entities.user;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
 import ru.tdd.user.application.models.enums.Role;
 
 import java.time.LocalDateTime;
@@ -13,7 +15,9 @@ import java.util.UUID;
  * @since 31.01.2026
  * Пользователь приложения
  */
-@Entity(name = "app_user")
+@Entity
+@Table(name = "app_user")
+@PrimaryKeyJoinColumn(name = "id")
 public class AppUser extends SystemUser {
 
     @Column(name = "email", unique = true)

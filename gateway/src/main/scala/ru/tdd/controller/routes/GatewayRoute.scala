@@ -2,7 +2,7 @@ package ru.tdd.controller.routes
 
 import ru.tdd.controller.configs.ServiceProxyConfig
 import zio.ZIO
-import zio.http.{Client, Header, Method, Request, Response, Routes, Status, URL, handler, string, trailing}
+import zio.http.{Client, Header, Method, Path, Request, Response, Routes, Scheme, Status, URL, handler, string, trailing}
 
 /**
  * @author Tribushko Danil
@@ -12,34 +12,50 @@ import zio.http.{Client, Header, Method, Request, Response, Routes, Status, URL,
 object GatewayRoute {
 
   def apply(services: Seq[ServiceProxyConfig]): Routes[Client, Nothing] = {
-    Routes.fromIterable(
-      services.map { service =>
-        Method.ANY / service.urlPattern / trailing ->
-          handler {
-            req: Request =>
-              val targetUrl = "http://" + s"${service.targetHost}:${service.targetPort}${req.url.encode}"
-              Client.batched(
-                Request(
-                  method = req.method,
-                  url = URL.decode(targetUrl).getOrElse{
-                    throw new RuntimeException("Неверный адрес")
-                  },
-                  headers = req.headers
-                    .removeHeader(Header.Host.name)
-                    .addHeader(Header.Host(service.targetHost, Some(service.targetPort))),
-                  body = req.body
-                )
-              ).catchAll {
-                case ex: RuntimeException => ZIO.succeed(Response.text(ex.getMessage).status(Status.BadRequest))
+
+    Routes(
+      Method.ANY / "api" / "v1" / trailing ->
+        handler { (_: Path, req: Request) =>
+
+          val segments = req.url.path.segments
+
+          segments.drop(2).headOption match {
+            case Some(serviceName) =>
+              services.find(_.urlPatterns.contains(serviceName)) match {
+
+                case Some(service) =>
+                  val targetUrl =
+                    req.url
+                      .host(service.targetHost)
+                      .port(service.targetPort)
+                      .scheme(Scheme.HTTP)
+
+                  Client.batched(
+                    Request(
+                      method = req.method,
+                      url = targetUrl,
+                      headers = req.headers.removeHeader(Header.Host.name),
+                      body = req.body
+                    )
+                  ).catchAll { ex =>
+                    ZIO.succeed(
+                      Response.text(s"Gateway error: ${ex.getMessage}")
+                        .status(Status.BadGateway)
+                    )
+                  }
+
+                case None =>
+                  ZIO.succeed(
+                    Response.text(s"Service '$serviceName' not found")
+                      .status(Status.NotFound)
+                  )
               }
+
+            case _ =>
+              ZIO.succeed(Response.status(Status.BadRequest))
           }
-      }
-    ) ++ Routes(
-      Method.GET / "health-check" ->
-        handler {
-          _: Request =>
-            ZIO.succeed(Response.text("Шлюз работает стабильно!").status(Status.Ok))
         }
     )
+
   }
 }
