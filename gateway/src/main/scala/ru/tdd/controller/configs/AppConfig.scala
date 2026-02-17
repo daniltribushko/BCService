@@ -39,7 +39,7 @@ object ServerConfig {
 case class ServiceProxyConfig(
                                targetHost: String,
                                targetPort: Int,
-                               urlPattern: String
+                               urlPatterns: List[String]
                              )
 
 object ServiceProxyConfig {
@@ -48,6 +48,6 @@ object ServiceProxyConfig {
     new ServiceProxyConfig(
       conf.getString("target-host"),
       conf.getInt("target-port"),
-      conf.getString("url-pattern")
+      conf.getStringList("url-patterns").asScala.toList
     )
 }

@@ -1,19 +1,21 @@
-FROM hseeberger/scala-sbt:17.0.2_1.6.2_3.1.1 AS build
+FROM gradle:8.5-jdk21 AS builder
 WORKDIR /app
 
-COPY project/ project/
-COPY build.sbt ./
+COPY build.gradle settings.gradle gradlew ./
+COPY gradle ./gradle
 
-RUN sbt update
+RUN gradle build -x test || return 0
 
-COPY src/ src/
+COPY . .
 
-RUN sbt assembly
+RUN gradle clean build -x test
 
-FROM openjdk:21-rc-jdk-slim
+FROM eclipse-temurin:21-jdk
 
 WORKDIR /app
 
-COPY --from=build /app/target/scala-*/*.jar /app/user_app.jar
+COPY --from=builder /app/build/libs/*.jar app.jar
 
-ENTRYPOINT ["java", "-jar", "/app/user_app.jar"]
+EXPOSE 8001
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
