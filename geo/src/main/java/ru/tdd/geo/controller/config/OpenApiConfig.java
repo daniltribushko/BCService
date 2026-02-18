@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,6 +35,12 @@ public class OpenApiConfig {
                         new Info()
                                 .title("BC Geo Service")
                                 .description("Сервис для работы со Странами, Регионами, Городами, Локациями")
+                )
+                .servers(
+                        List.of(
+                                new Server()
+                                        .url("/api/v1")
+                        )
                 )
                 .tags(
                         List.of(

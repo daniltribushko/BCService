@@ -20,3 +20,11 @@ services:
     name: users
 jwt:
   secret: feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac
+springdoc:
+  swagger-ui:
+    url: /geo/docs
+    path: /geo/docs/swagger-ui.html
+    disable-swagger-default-url: true
+  api-docs:
+    path: /geo/docs
+    enabled: true

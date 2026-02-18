@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import ru.tdd.geo.application.models.dto.UserDTO;
 import ru.tdd.geo.application.models.exceptions.ApiException;
 import ru.tdd.geo.application.services.JwtTokenService;
 import ru.tdd.geo.application.utils.TextUtils;
@@ -34,15 +35,11 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtTokenService jwtTokenService;
 
-    private final UserDetailsService userDetailsService;
-
     @Autowired
     public JwtFilter(
-            JwtTokenService jwtTokenService,
-            UserDetailsService userDetailsService
+            JwtTokenService jwtTokenService
     ) {
         this.jwtTokenService = jwtTokenService;
-        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -54,7 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
             if (jwtTokenService.validateToken(token)) {
                 String username = jwtTokenService.parseToken(token).getSubject();
                 if (!TextUtils.isEmptyWithNull(username) && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails user = userDetailsService.loadUserByUsername(username);
+                    UserDTO user = jwtTokenService.getUser(token);
                     SecurityContext context = SecurityContextHolder.createEmptyContext();
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             user,

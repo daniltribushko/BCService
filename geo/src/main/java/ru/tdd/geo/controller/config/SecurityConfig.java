@@ -23,16 +23,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
-    private final UserDetailsService userDetailsService;
-
     private final JwtFilter jwtFilter;
 
     @Autowired
     public SecurityConfig(
-            UserDetailsService userDetailsService,
             JwtFilter jwtFilter
     ) {
-        this.userDetailsService = userDetailsService;
         this.jwtFilter = jwtFilter;
     }
 
@@ -43,25 +39,17 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req ->
                         req
-                                .requestMatchers("/v3/**", "/swagger-ui/**")
+                                .requestMatchers(
+                                    "/docs/**",
+                                    "/docs/swagger-ui.html"
+                                )
                                 .permitAll()
                                 .anyRequest()
-                                .authenticated()
+                                .permitAll()
                 )
                 .sessionManagement(management ->
                         management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configurator) throws Exception {
-        return configurator.getAuthenticationManager();
-    }
-
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        return new DaoAuthenticationProvider(userDetailsService);
     }
 }

@@ -6,10 +6,15 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import ru.tdd.geo.application.models.dto.UserDTO;
+import ru.tdd.geo.application.models.enums.Role;
 import ru.tdd.geo.application.services.JwtTokenService;
 
 import javax.crypto.SecretKey;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * @author Tribushko Danil
@@ -24,6 +29,18 @@ public class JwtTokenServiceImp implements JwtTokenService {
     @Override
     public boolean validateToken(String token) {
         return parseToken(token).getExpiration().after(new Date());
+    }
+
+    @Override
+    public UserDTO getUser(String token) {
+        Claims claims = parseToken(token);
+        List<String> stringRoles = claims.get("roles", List.class);
+        return new UserDTO(
+                UUID.fromString(claims.get("id", String.class)),
+                claims.get("chatId", Long.class),
+                claims.getSubject(),
+                stringRoles.stream().map(Role::valueOf).toList()
+        );
     }
 
     @Override

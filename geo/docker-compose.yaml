@@ -1,0 +1,39 @@
+services:
+  gateway:
+    container_name: bc-gateway
+    image: daniltribushko26/bc_gateway:0.0.1
+    ports:
+      - '8000:8000'
+    environment:
+      - SERVER_URL=bc-gateway
+      - GEO_TARGET_HOST=geo-service
+      - GEO_TARGET_PORT=8002
+  geo-service:
+    container_name: bc-geo-service
+    image: daniltribushko26/bc_geo_service:0.0.1
+    depends_on:
+      geo_service_db:
+        condition: service_healthy
+    ports:
+      - '8002:8002'
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://geo_service_db:5432/bc_geo_db
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123
+      - SPRING_DOC_SWAGGER_UI_URL=/api/v1/geo/docs
+  geo_service_db:
+    container_name: bc_geo_service_Db
+    image: postgres:17
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=123
+      - POSTGRES_DB=bc_user_db
+      - POSTGRES_PORT=5432
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U root -d bc_user_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5

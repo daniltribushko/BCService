@@ -1,6 +1,7 @@
 package ru.tdd.geo.application.services;
 
 import io.jsonwebtoken.Claims;
+import ru.tdd.geo.application.models.dto.UserDTO;
 
 /**
  * @author Tribushko Danil
@@ -13,6 +14,8 @@ public interface JwtTokenService {
      * Валидация токена
      */
     boolean validateToken(String token);
+
+    UserDTO getUser(String token);
 
     /**
      * Получение данных из токена
