@@ -15,4 +15,10 @@ public class JsonUtils {
 
         return mapper.writeValueAsString(object);
     }
+
+    public static<T> T fromJson(String json, Class<T> clazz) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+
+        return mapper.readValue(json, clazz);
+    }
 }

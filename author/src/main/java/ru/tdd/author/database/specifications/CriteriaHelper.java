@@ -16,7 +16,7 @@ import java.util.List;
  * @since 18.02.2026
  * Обертка для работы с Criteria Api
  */
-public class CriteriaHelper<T extends BaseEntity> {
+public class CriteriaHelper<T> {
 
     private Root<T> root;
 

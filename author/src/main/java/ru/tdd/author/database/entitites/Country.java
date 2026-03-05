@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
  */
 @Entity
 @Table(name = "country")
-public class Country extends BaseEntity {
+public class Country extends KafkaEntity {
 
     @Column(name = "name")
     private String name;

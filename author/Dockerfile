@@ -14,8 +14,8 @@ FROM eclipse-temurin:21-jdk
 
 WORKDIR /app
 
-COPY --from=builder /app/build/libs/*.jar geo_app.jar
+COPY --from=builder /app/build/libs/*.jar author_app.jar
 
-EXPOSE 8002
+EXPOSE 8003
 
-ENTRYPOINT ["java", "-jar", "geo_app.jar"]
+ENTRYPOINT ["java", "-jar", "author_app.jar"]

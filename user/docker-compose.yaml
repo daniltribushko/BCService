@@ -20,7 +20,6 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://user_service_db:5432/bc_user_db
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123
-      - SPRINGDOC_SWAGGER_UI_URL=/api/v1/users/docs
   user_service_db:
     container_name: bc_user_service_db
     image: postgres:17

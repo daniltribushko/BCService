@@ -18,7 +18,6 @@ import java.util.UUID;
  * @since 22.02.2026
  */
 @RestController
-@SecurityRequirement(name = "jwtAuth")
 public class AuthorControllerImp implements AuthorController {
 
     private final AuthorService authorService;

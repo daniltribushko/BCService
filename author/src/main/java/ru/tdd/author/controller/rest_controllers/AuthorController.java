@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
@@ -23,6 +24,7 @@ import java.util.UUID;
  * Контроллер для работы с авторами
  */
 @RequestMapping("/authors")
+@SecurityRequirement(name = "jwtAuth")
 @Tag(name = OpenApiConfig.AUTHOR_CONTROLLER)
 public interface AuthorController {
 

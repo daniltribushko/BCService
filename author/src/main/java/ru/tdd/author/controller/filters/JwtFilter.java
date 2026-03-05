@@ -30,7 +30,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer";
 
-    private static final String AUTHORISATION_PREFIX = "Authorisation";
+    private static final String AUTHORISATION_PREFIX = "Authorization";
 
     private final JwtService jwtService;
 
