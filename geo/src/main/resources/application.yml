@@ -9,6 +9,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  Kafka:
+    bootstrap-servers: localhost:9092
+apache-kafka:
+  topics:
+    country: bc.country
 server:
   port: 8002
   servlet:

@@ -1,0 +1,53 @@
+package ru.tdd.geo.application.services.imp.kafka;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import ru.tdd.geo.application.mappers.CountryMapper;
+import ru.tdd.geo.application.models.dto.DTOMapper;
+import ru.tdd.geo.application.models.enums.event.CountryOutboxEvent;
+import ru.tdd.geo.application.services.KafkaService;
+import ru.tdd.geo.database.entities.Country;
+import ru.tdd.geo.database.entities.OutboxEvent;
+import ru.tdd.geo.database.repositories.OutboxEventRepository;
+
+import java.time.LocalDateTime;
+
+/**
+ * @author Tribushko Danil
+ * @since 28.02.2026
+ * Сервис для отправки стран в кафку
+ */
+@Service
+public class CountryKafkaService implements KafkaService<CountryOutboxEvent, Country> {
+
+    private final OutboxEventRepository outboxEventRepository;
+
+    private final CountryMapper countryMapper;
+
+    @Autowired
+    public CountryKafkaService(
+            OutboxEventRepository outboxEventRepository,
+            CountryMapper countryMapper
+    ) {
+        this.outboxEventRepository = outboxEventRepository;
+        this.countryMapper = countryMapper;
+    }
+
+    @Override
+    public void send(CountryOutboxEvent type, Country entity) {
+        try {
+            OutboxEvent event = new OutboxEvent(
+                    Country.class.getName(),
+                    type.getType(),
+                    DTOMapper.toJson(countryMapper.toDto(entity)),
+                    LocalDateTime.now()
+            );
+
+            outboxEventRepository.save(event);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}

@@ -4,7 +4,7 @@ WORKDIR /app
 COPY build.gradle settings.gradle gradlew ./
 COPY gradle ./gradle
 
-RUN gradle build -x text || return 0
+RUN gradle build -x test || return 0
 
 COPY . .
 

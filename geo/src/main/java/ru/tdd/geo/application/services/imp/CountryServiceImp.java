@@ -4,12 +4,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import ru.tdd.geo.application.mappers.CountryMapper;
 import ru.tdd.geo.application.models.dto.geo.country.*;
+import ru.tdd.geo.application.models.enums.event.CountryOutboxEvent;
 import ru.tdd.geo.application.models.exceptions.AlreadyExistsException;
 import ru.tdd.geo.application.models.exceptions.NotFoundException;
 import ru.tdd.geo.application.models.exceptions.geo.country.CountryAlreadyExistsException;
 import ru.tdd.geo.application.models.exceptions.geo.country.CountryByIdNotFoundException;
 import ru.tdd.geo.application.services.CountryService;
+import ru.tdd.geo.application.services.imp.kafka.CountryKafkaService;
 import ru.tdd.geo.application.utils.TextUtils;
 import ru.tdd.geo.database.entities.Country;
 import ru.tdd.geo.database.repositories.CountryRepository;
@@ -27,11 +30,17 @@ public class CountryServiceImp implements CountryService {
 
     private final CountryRepository countryRepository;
 
+    private final CountryKafkaService countryKafkaService;
+    private final CountryMapper countryMapper;
+
     @Autowired
     public CountryServiceImp(
-            CountryRepository countryRepository
-    ) {
+            CountryRepository countryRepository,
+            CountryKafkaService countryKafkaService,
+            CountryMapper countryMapper) {
         this.countryRepository = countryRepository;
+        this.countryKafkaService = countryKafkaService;
+        this.countryMapper = countryMapper;
     }
 
     @Override
@@ -42,6 +51,8 @@ public class CountryServiceImp implements CountryService {
         }
         Country country = new Country(name);
         countryRepository.save(country);
+        countryKafkaService.send(CountryOutboxEvent.CREATE, country);
+
         return new CountryDTO(country.getId(), country.getName());
     }
 
@@ -61,6 +72,7 @@ public class CountryServiceImp implements CountryService {
         }
 
         countryRepository.save(country);
+        countryKafkaService.send(CountryOutboxEvent.UPDATE, country);
 
         return new CountryDTO(country.getId(), country.getName());
     }
@@ -71,6 +83,7 @@ public class CountryServiceImp implements CountryService {
                 .orElseThrow(CountryByIdNotFoundException::new);
 
         countryRepository.delete(country);
+        countryKafkaService.send(CountryOutboxEvent.DELETE, country);
     }
 
     @Override

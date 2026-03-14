@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  redis:
+    image: redis:latest
+    container_name: bc_author_redis
+    ports:
+      - '6379:6379'
+  author-service:
+    container_name: bc-author-service
+    image: daniltribushko26/bc_author_service:0.0.1
+    depends_on:
+      author_service_db:
+        condition: service_healthy
+    ports:
+      - '8003:8003'
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://author_service_db:5432/bc_author_db
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123
+      - SPRING_DOC_SWAGGER_UI_URL=/api/author/docs
+  author_service_db:
+    container_name: bc_author_service_db
+    image: postgres:17
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=123
+      - POSTGRES_DB=bc_author_db
+      - POSTGRES_PORT=5432
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d bc_author_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

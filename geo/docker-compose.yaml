@@ -22,7 +22,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=123
       - SPRING_DOC_SWAGGER_UI_URL=/api/v1/geo/docs
   geo_service_db:
-    container_name: bc_geo_service_Db
+    container_name: bc_geo_service_db
     image: postgres:17
     environment:
       - PGDATA=/var/lib/postgresql/data/pgdata
