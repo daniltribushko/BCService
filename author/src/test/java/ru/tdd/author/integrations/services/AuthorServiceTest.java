@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.author.TestcontainersConfiguration;
@@ -31,7 +32,7 @@ import java.util.UUID;
  */
 @SpringBootTest
 @Testcontainers
-@ImportTestcontainers(TestcontainersConfiguration.class)
+@Import(TestcontainersConfiguration.class)
 @DisplayName(value = "Интеграционные тесты сервиса по работе с авторами")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class AuthorServiceTest {
@@ -64,7 +65,10 @@ public class AuthorServiceTest {
     void createSuccessTest() {
         Country country = new Country("Россия");
 
+        country.setId(UUID.randomUUID());
+
         countryRepository.save(country);
+
         long expectedCount = authorRepository.count() + 1;
 
         AuthorDTO actual = authorService.create(
@@ -87,6 +91,9 @@ public class AuthorServiceTest {
     void updateSuccessTest() {
         Country country1 = new Country("Россия");
         Country country2 = new Country("Иран");
+
+        country1.setId(UUID.randomUUID());
+        country2.setId(UUID.randomUUID());
 
         countryRepository.saveAll(List.of(country1, country2));
 
@@ -134,6 +141,8 @@ public class AuthorServiceTest {
     void updateCountryNotFoundFailTest() {
         Country country = new Country("Россия");
 
+        country.setId(UUID.randomUUID());
+
         countryRepository.save(country);
 
         Author author = new Author(
@@ -168,6 +177,8 @@ public class AuthorServiceTest {
     @DisplayName("Удачное удаление")
     void deleteSuccessTest() {
         Country country = new Country("Россия");
+
+        country.setId(UUID.randomUUID());
 
         countryRepository.save(country);
 
@@ -210,6 +221,8 @@ public class AuthorServiceTest {
     @DisplayName("Удачное получение по идентификатору")
     void getByIdSuccessTest() {
         Country country = new Country("Россия");
+
+        country.setId(UUID.randomUUID());
 
         countryRepository.save(country);
 

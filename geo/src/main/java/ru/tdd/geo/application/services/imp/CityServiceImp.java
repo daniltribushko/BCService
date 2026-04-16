@@ -3,14 +3,16 @@ package ru.tdd.geo.application.services.imp;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import ru.tdd.core.application.exceptions.ValidationException;
+import ru.tdd.core.application.utils.TextUtils;
+import ru.tdd.geo.application.mappers.CityMapper;
+import ru.tdd.geo.application.mappers.LocationMapper;
 import ru.tdd.geo.application.models.dto.geo.city.*;
-import ru.tdd.geo.application.models.exceptions.ValidationException;
 import ru.tdd.geo.application.models.exceptions.geo.cities.CityAlreadyExistException;
 import ru.tdd.geo.application.models.exceptions.geo.cities.CityByIdNotFoundException;
 import ru.tdd.geo.application.models.exceptions.geo.country.CountryByIdNotFoundException;
 import ru.tdd.geo.application.models.exceptions.geo.region.RegionByIdNotFoundException;
 import ru.tdd.geo.application.services.CityService;
-import ru.tdd.geo.application.utils.TextUtils;
 import ru.tdd.geo.database.entities.City;
 import ru.tdd.geo.database.entities.Country;
 import ru.tdd.geo.database.entities.Region;
@@ -35,14 +37,22 @@ public class CityServiceImp implements CityService {
 
     private final CountryRepository countryRepository;
 
+    private final CityMapper cityMapper;
+
+    private final LocationMapper locationMapper;
+
     public CityServiceImp(
             CityRepository cityRepository,
             RegionRepository regionRepository,
-            CountryRepository countryRepository
+            CountryRepository countryRepository,
+            CityMapper cityMapper,
+            LocationMapper locationMapper
     ) {
         this.cityRepository = cityRepository;
         this.regionRepository = regionRepository;
         this.countryRepository = countryRepository;
+        this.cityMapper = cityMapper;
+        this.locationMapper = locationMapper;
     }
 
     @Override
@@ -77,7 +87,7 @@ public class CityServiceImp implements CityService {
 
         cityRepository.save(city);
 
-        return CityDTO.mapFromEntity(city);
+        return cityMapper.toDto(city);
     }
 
     @Override
@@ -105,7 +115,7 @@ public class CityServiceImp implements CityService {
         )
             throw new CityAlreadyExistException();
 
-        if (!TextUtils.isEmptyWithNull(name))
+        if (!TextUtils.isEmpty(name))
             city.setName(name);
 
         regionIdOpt.ifPresentOrElse(regionId -> {
@@ -125,12 +135,15 @@ public class CityServiceImp implements CityService {
 
         cityRepository.save(city);
 
-        return CityDTO.mapFromEntity(city);
+        return cityMapper.toDto(city);
     }
 
     @Override
     public CityDetailsDTO getById(UUID id) {
-        return CityDetailsDTO.mapFromEntity(cityRepository.findById(id).orElseThrow(CityByIdNotFoundException::new));
+        City city = cityRepository.findById(id).orElseThrow(CityByIdNotFoundException::new);
+        CityDetailsDTO result = cityMapper.toDetailsDto(city);
+        result.setLocations(city.getLocations().stream().map(locationMapper::toDto).toList());
+        return result;
     }
 
     @Override
@@ -145,7 +158,7 @@ public class CityServiceImp implements CityService {
                                 CitySpecification.byNameRegionCityFullTextSearch(name, regionName, countryName),
                                 PageRequest.of(page, perPage, Sort.by("name"))
                         ).stream()
-                        .map(CityDTO::mapFromEntity)
+                        .map(cityMapper::toDto)
                         .toList()
         );
     }

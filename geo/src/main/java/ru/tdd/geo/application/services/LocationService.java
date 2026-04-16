@@ -13,6 +13,7 @@ import java.util.UUID;
  * @since 24.01.2026
  * Сервис для работы с локациями
  */
+@Transactional(readOnly = true)
 public interface LocationService {
 
     @Transactional
@@ -21,12 +22,10 @@ public interface LocationService {
     @Transactional
     LocationDTO update(UUID id, UpdateLocationDTO dto);
 
-    @Transactional
     LocationDTO getById(UUID id);
 
     @Transactional
     void delete(UUID id);
 
-    @Transactional
     LocationsDTO getAll(String name, String cityName, int page, int perPage);
 }

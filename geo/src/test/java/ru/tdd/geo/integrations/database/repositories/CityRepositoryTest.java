@@ -2,14 +2,13 @@ package ru.tdd.geo.integrations.database.repositories;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.C;
 import ru.tdd.geo.TestcontainersConfiguration;
 import ru.tdd.geo.database.entities.City;
 import ru.tdd.geo.database.entities.Country;
@@ -30,9 +29,9 @@ import java.util.UUID;
  * Набор тестов репозитория городов
  */
 @DataJpaTest
-@Transactional
 @Testcontainers
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@DisplayName("Интеграционный тест репозитория городов")
+@Import(value = TestcontainersConfiguration.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class CityRepositoryTest {
 
@@ -53,6 +52,7 @@ public class CityRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное сохранение")
     void saveTest() {
         Country country = new Country("Test Country Save");
         City city = new City("Test City Save", null, country);
@@ -66,6 +66,7 @@ public class CityRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное удаление")
     void deleteTest() {
         Country country = new Country("Test Country Delete ");
         City city = new City("Test City Delete", null, country);
@@ -80,6 +81,7 @@ public class CityRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное получение по идентификатору")
     void findByIdTest() {
         Country country = new Country("Test Country Find By Id");
 
@@ -107,6 +109,7 @@ public class CityRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное обновление")
     void updateTest() {
         Country country = new Country("Test Country Update");
 
@@ -125,6 +128,7 @@ public class CityRepositoryTest {
     }
 
     @Test
+    @DisplayName("Получение всех записей")
     void findAllTest() {
         Country country = new Country("Test Country Find All");
 
@@ -141,6 +145,7 @@ public class CityRepositoryTest {
     }
 
     @Test
+    @DisplayName("Полнотекстовый поиск по названию")
     void findByNameTest() {
         Country country = new Country("Test Country Find By Name");
 
@@ -164,6 +169,7 @@ public class CityRepositoryTest {
     }
 
     @Test
+    @DisplayName("Наличие с указанным названием")
     void existsByNameAndRegionAndCityTest() {
         Country country1 = new Country("Test Country 1");
         Country country2 = new Country("Test Country 2");

@@ -2,11 +2,12 @@ package ru.tdd.geo.integrations.application.services;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.geo.TestcontainersConfiguration;
@@ -29,7 +30,8 @@ import java.util.UUID;
 
 @SpringBootTest
 @Testcontainers
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@Import(value = TestcontainersConfiguration.class)
+@DisplayName("Интеграционный тест сервиса локаций")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class LocationServiceTest {
 
@@ -62,6 +64,7 @@ public class LocationServiceTest {
     }
 
     @Test
+    @DisplayName("Удачное создание")
     void saveSuccessTest() {
         Country country = new Country("Save Location Test Country");
 
@@ -83,6 +86,7 @@ public class LocationServiceTest {
     }
 
     @Test
+    @DisplayName("Неудачное создание - локация уже создана")
     void saveAlreadyExistsFailTest() {
         Country country = new Country("Already Exists Location Test Country");
 
@@ -101,7 +105,7 @@ public class LocationServiceTest {
                 () -> locationService.create(new CreateLocationDTO("Already Exists Location", city.getId()))
         );
 
-        Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
         Assertions.assertEquals(
                 "Локация с указанным названием и городом уже создана",
                 actual.getMessage()
@@ -109,13 +113,14 @@ public class LocationServiceTest {
     }
 
     @Test
+    @DisplayName("Неудачное создание - город не найден")
     void saveCityNotFoundFailTest() {
         CityByIdNotFoundException actual = Assertions.assertThrows(
                 CityByIdNotFoundException.class,
                 () -> locationService.create(new CreateLocationDTO("Test Location", UUID.randomUUID()))
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals(
                 "Город с указанным идентификатором не найден",
                 actual.getMessage()
@@ -123,6 +128,7 @@ public class LocationServiceTest {
     }
 
     @Test
+    @DisplayName("Удачное обновление")
     void updateSuccessTest() {
         Country country = new Country("Test Country");
 
@@ -156,13 +162,14 @@ public class LocationServiceTest {
     }
 
     @Test
+    @DisplayName("Неудачное обновление - локация не найдена")
     void updateLocationNotFoundFailTest() {
         LocationByIdNotFoundException actual = Assertions.assertThrows(
                 LocationByIdNotFoundException.class,
                 () -> locationService.update(UUID.randomUUID(), new UpdateLocationDTO())
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals(
                 "Локация с указанным идентификатором не найдена",
                 actual.getMessage()
@@ -170,6 +177,7 @@ public class LocationServiceTest {
     }
 
     @Test
+    @DisplayName("Неудачное обновление - локация уже создана")
     void updateAlreadyExistsFailTest() {
         Country country = new Country("Test Country");
 
@@ -202,8 +210,8 @@ public class LocationServiceTest {
                 )
         );
 
-        Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual1.getStatusCode());
-        Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual2.getStatusCode());
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual1.getStatusCode());
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual2.getStatusCode());
         Assertions.assertEquals(
                 "Локация с указанным названием и городом уже создана",
                 actual1.getMessage()
@@ -216,6 +224,7 @@ public class LocationServiceTest {
     }
 
     @Test
+    @DisplayName("Неудачное обновление - город не найден")
     void updateCityNotFoundFailTest() {
         Country country = new Country("Test Country");
 
@@ -234,7 +243,7 @@ public class LocationServiceTest {
                 () -> locationService.update(location.getId(), new UpdateLocationDTO(null, UUID.randomUUID()))
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals(
                 "Город с указанным идентификатором не найден",
                 actual.getMessage()
@@ -242,6 +251,7 @@ public class LocationServiceTest {
     }
 
     @Test
+    @DisplayName("Удачное получение по идентификатору")
     void getByIdSuccessTest() {
         Country country = new Country("Test Country");
 
@@ -275,6 +285,7 @@ public class LocationServiceTest {
     }
 
     @Test
+    @DisplayName("Неудачное получение по идентификатору - локация не найдена")
     void getByIdNotFoundFailTest() {
         Country country = new Country("Test Country");
 
@@ -293,7 +304,7 @@ public class LocationServiceTest {
                 () -> locationService.getById(UUID.randomUUID())
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals(
                 "Локация с указанным идентификатором не найдена",
                 actual.getMessage()
@@ -301,6 +312,7 @@ public class LocationServiceTest {
     }
 
     @Test
+    @DisplayName("Удачное удаление")
     void deleteSuccessTest() {
         Country country = new Country("Test Country");
 
@@ -325,13 +337,14 @@ public class LocationServiceTest {
     }
 
     @Test
+    @DisplayName("Неудачное удаление - локация не найдена")
     void deleteNotFoundFailTest() {
         LocationByIdNotFoundException actual = Assertions.assertThrows(
                 LocationByIdNotFoundException.class,
                 () -> locationService.delete(UUID.randomUUID())
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals(
                 "Локация с указанным идентификатором не найдена",
                 actual.getMessage()

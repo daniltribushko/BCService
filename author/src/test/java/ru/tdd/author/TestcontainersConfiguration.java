@@ -16,23 +16,16 @@ public class TestcontainersConfiguration {
     @ServiceConnection
     public static PostgreSQLContainer<?> postgreSQLContainer() {
         return new PostgreSQLContainer<>("postgres:latest")
-                .withDatabaseName("bc_author_db/test")
+                .withDatabaseName("bc_author_db")
                 .withUsername("root")
                 .withPassword("123")
                 .withReuse(false);
     }
 
-    @Container
-    static GenericContainer<?> redisContainer = new GenericContainer<>("redis:latest")
-            .withExposedPorts(6379);
-
-    static {
-        redisContainer.start();
-    }
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.redis.host", redisContainer::getHost);
-        registry.add("spring.data.redis.port", () -> redisContainer.getMappedPort(6379));
+    @Bean
+    @ServiceConnection(name = "redis")
+    public GenericContainer<?> redisContainer() {
+        return new GenericContainer<>("redis:latest")
+                .withExposedPorts(6379);
     }
 }

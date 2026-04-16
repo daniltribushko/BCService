@@ -1,5 +1,7 @@
 package ru.tdd.geo.application.models.enums.event;
 
+import ru.tdd.core.application.enums.kafka_events.OutboxEventType;
+
 /**
  * @author Tribushko Danil
  * @since 28.02.2026

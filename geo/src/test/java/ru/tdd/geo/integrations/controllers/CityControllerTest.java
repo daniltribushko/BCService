@@ -2,11 +2,12 @@ package ru.tdd.geo.integrations.controllers;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -43,7 +44,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @SpringBootTest
 @AutoConfigureMockMvc
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@DisplayName("Тест контроллера городов")
+@Import(value = TestcontainersConfiguration.class)
 class CityControllerTest {
 
     private final MockMvc mockMvc;
@@ -77,6 +79,7 @@ class CityControllerTest {
     }
 
     @Test
+    @DisplayName("Удачное создание")
     @WithMockUser(username = "admin", roles = "ADMIN")
     void createSuccessTest() throws Exception {
         Country country = new Country("Russia");
@@ -101,6 +104,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Неудачное создание - пользователь не является администратором")
     void createNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 post(BASE_URL)
@@ -120,6 +124,7 @@ class CityControllerTest {
     }
 
     @Test
+    @DisplayName("Неудачное создание - регион не найден")
     @WithMockUser(username = "admin", roles = "ADMIN")
     void createRegionNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
@@ -141,6 +146,7 @@ class CityControllerTest {
     }
 
     @Test
+    @DisplayName("Неудачное создание - город не найдено")
     @WithMockUser(username = "admin", roles = "ADMIN")
     void createCityNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
@@ -163,6 +169,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Не удачное создание - город уже создан")
     void createAlreadyExistsFailTest() throws Exception {
         Country country = new Country("Test Country");
 
@@ -224,6 +231,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Неудачное создание - данные не валидны")
     void createNotValidFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 post(BASE_URL)
@@ -250,6 +258,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Удачное обновление")
     void updateSuccessTest() throws Exception {
         Country country1 = new Country("Test Country 1");
         Country country2 = new Country("Test Country 2");
@@ -371,6 +380,7 @@ class CityControllerTest {
     }
 
     @Test
+    @DisplayName("Неудачное обновление - пользователь не является администратором")
     void updateNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
@@ -387,6 +397,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Неудачное обновление - город не найден")
     void updateCityNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
@@ -409,6 +420,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Неудачное обновление - регион не найден")
     void updateRegionNotFoundFailTest() throws Exception {
         Country country = new Country("Test Country");
 
@@ -444,6 +456,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Не удачное обновление - страна не найдена")
     void updateCountryNotFoundFailTest() throws Exception {
         Country country = new Country("Fail Test Country 2");
 
@@ -478,6 +491,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Удачное получение по идентификатору")
     void getByIdSuccessTest() throws Exception {
         Country country = new Country("Test Get City By Id Country");
 
@@ -520,6 +534,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Неудачное получение по идентификатору - город не найден")
     void getByIdNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 get(BASE_URL + "/" + UUID.randomUUID())
@@ -536,6 +551,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Удачное удаление")
     void deleteSuccessTest() throws Exception {
         Country country = new Country("Test Delete City Country");
 
@@ -559,6 +575,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Неудачное удаление - город не найден")
     void deleteNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 delete(BASE_URL + "/" + UUID.randomUUID())
@@ -575,6 +592,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Неудачное удаление - пользователь не является администратором")
     void deleteNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 delete(BASE_URL + "/" + UUID.randomUUID())
@@ -585,6 +603,7 @@ class CityControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Получение списка с фильтрами")
     void getAllTest() throws Exception {
         Country country1 = new Country("tEsT");
         Country country2 = new Country("testING");

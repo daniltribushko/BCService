@@ -3,8 +3,8 @@ package ru.tdd.geo.controller.aspect;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ru.tdd.geo.application.models.dto.ExceptionDTO;
-import ru.tdd.geo.application.models.exceptions.ApiException;
+import ru.tdd.core.application.exceptions.ApiException;
+import ru.tdd.core.controller.dto.ExceptionDTO;
 
 /**
  * @author Tribushko Danil
@@ -17,6 +17,6 @@ public class ControllerAdvice {
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ExceptionDTO> handleApiException(ApiException ex) {
         return ResponseEntity.status(ex.getStatusCode())
-                .body(new ExceptionDTO(ex.getStatusCode(), ex.getMessage()));
+                .body(new ExceptionDTO(ex.getStatusCode().value(), ex.getMessage()));
     }
 }

@@ -1,7 +1,7 @@
 package ru.tdd.geo.database.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import ru.tdd.geo.application.utils.TextUtils;
+import ru.tdd.core.application.utils.TextUtils;
 import ru.tdd.geo.database.entities.BaseNameEntity;
 
 /**
@@ -16,7 +16,7 @@ public interface NameSpecification {
      */
     static <T extends BaseNameEntity> Specification<T> byNameWithFullTextSearch(String name) {
         return (root, cr, cb) ->
-                TextUtils.isEmptyWithNull(name) ?
+                TextUtils.isEmpty(name) ?
                         cb.conjunction() :
                         cb.like(
                                 cb.lower(root.get("name")),

@@ -2,6 +2,7 @@ package ru.tdd.geo.application.mappers;
 
 import org.mapstruct.Mapper;
 import ru.tdd.geo.application.models.dto.geo.country.CountryDTO;
+import ru.tdd.geo.application.models.dto.geo.country.CountryDetailsDTO;
 import ru.tdd.geo.database.entities.Country;
 
 /**
@@ -14,5 +15,5 @@ public interface CountryMapper {
 
     CountryDTO toDto(Country country);
 
-    Country toEntity(CountryDTO dto);
+    CountryDetailsDTO toDetailsDto(Country country);
 }

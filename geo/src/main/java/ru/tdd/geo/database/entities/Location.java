@@ -1,6 +1,7 @@
 package ru.tdd.geo.database.entities;
 
 import jakarta.persistence.*;
+import ru.tdd.core.database.entities.BaseEntity;
 
 /**
  * @author Tribushko Danil

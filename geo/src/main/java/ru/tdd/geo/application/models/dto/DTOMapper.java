@@ -10,6 +10,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  * @since 05.01.2026
  * Класс для преобразование json-строк
  */
+@Deprecated(since = "08.04.2026")
 public interface DTOMapper {
 
     static <T> String toJson(T value) throws JsonProcessingException {

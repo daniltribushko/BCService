@@ -1,6 +1,6 @@
 package ru.tdd.geo.application.models.exceptions.geo.country;
 
-import ru.tdd.geo.application.models.exceptions.AlreadyExistsException;
+import ru.tdd.core.application.exceptions.AlreadyExistsException;
 
 /**
  * @author Tribushko Danil

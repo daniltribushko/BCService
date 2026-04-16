@@ -10,6 +10,7 @@ import java.util.UUID;
  * @since 13.01.2026
  * Сервис для работы с городами
  */
+@Transactional(readOnly = true)
 public interface CityService {
 
     @Transactional
@@ -18,13 +19,11 @@ public interface CityService {
     @Transactional
     CityDTO update(UUID id, UpdateCityDTO dto);
 
-    @Transactional
     CityDetailsDTO getById(UUID id);
 
     @Transactional
     void delete(UUID id);
 
-    @Transactional
     CitiesDTO getAll(
             String name,
             String regionName,

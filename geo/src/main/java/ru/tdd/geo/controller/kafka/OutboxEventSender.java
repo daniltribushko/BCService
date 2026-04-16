@@ -4,11 +4,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import ru.tdd.geo.application.mappers.OutboxEventMapper;
-import ru.tdd.geo.application.models.dto.OutboxEventDTO;
+import ru.tdd.core.controller.dto.OutboxEventDTO;
+import ru.tdd.core.controller.dto.OutboxEventMapper;
+import ru.tdd.core.database.entities.kafka.OutboxEvent;
+import ru.tdd.core.database.repositories.OutboxEventRepository;
 import ru.tdd.geo.database.entities.Country;
-import ru.tdd.geo.database.entities.OutboxEvent;
-import ru.tdd.geo.database.repositories.OutboxEventRepository;
 
 import java.util.List;
 

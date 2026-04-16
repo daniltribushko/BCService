@@ -15,7 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
-import ru.tdd.geo.application.models.dto.ExceptionDTO;
+import ru.tdd.core.controller.dto.ExceptionDTO;
 import ru.tdd.geo.application.models.dto.geo.country.*;
 import ru.tdd.geo.application.services.CountryService;
 import ru.tdd.geo.controller.config.OpenApiConfig;

@@ -3,6 +3,8 @@ package ru.tdd.geo.application.services.imp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import ru.tdd.core.application.utils.TextUtils;
+import ru.tdd.geo.application.mappers.LocationMapper;
 import ru.tdd.geo.application.models.dto.geo.location.CreateLocationDTO;
 import ru.tdd.geo.application.models.dto.geo.location.LocationDTO;
 import ru.tdd.geo.application.models.dto.geo.location.LocationsDTO;
@@ -11,7 +13,6 @@ import ru.tdd.geo.application.models.exceptions.geo.cities.CityByIdNotFoundExcep
 import ru.tdd.geo.application.models.exceptions.geo.locations.LocationAlreadyExistsException;
 import ru.tdd.geo.application.models.exceptions.geo.locations.LocationByIdNotFoundException;
 import ru.tdd.geo.application.services.LocationService;
-import ru.tdd.geo.application.utils.TextUtils;
 import ru.tdd.geo.database.entities.City;
 import ru.tdd.geo.database.entities.Location;
 import ru.tdd.geo.database.repositories.CityRepository;
@@ -32,13 +33,17 @@ public class LocationServiceImp implements LocationService {
 
     private final CityRepository cityRepository;
 
+    private final LocationMapper locationMapper;
+
     @Autowired
     public LocationServiceImp(
             LocationRepository locationRepository,
-            CityRepository cityRepository
+            CityRepository cityRepository,
+            LocationMapper locationMapper
     ) {
         this.locationRepository = locationRepository;
         this.cityRepository = cityRepository;
+        this.locationMapper = locationMapper;
     }
 
     @Override
@@ -55,7 +60,7 @@ public class LocationServiceImp implements LocationService {
 
         locationRepository.save(location);
 
-        return LocationDTO.mapFromEntity(location);
+        return  locationMapper.toDto(location);
     }
 
     @Override
@@ -75,7 +80,7 @@ public class LocationServiceImp implements LocationService {
         )
             throw new LocationAlreadyExistsException();
 
-        if (!TextUtils.isEmptyWithNull(name))
+        if (!TextUtils.isEmpty(name))
             location.setName(name);
 
         cityIdOpt.ifPresent(cityId -> {
@@ -85,12 +90,12 @@ public class LocationServiceImp implements LocationService {
 
         locationRepository.save(location);
 
-        return LocationDTO.mapFromEntity(location);
+        return locationMapper.toDto(location);
     }
 
     @Override
     public LocationDTO getById(UUID id) {
-        return LocationDTO.mapFromEntity(locationRepository.findById(id).orElseThrow(LocationByIdNotFoundException::new));
+        return locationMapper.toDto(locationRepository.findById(id).orElseThrow(LocationByIdNotFoundException::new));
     }
 
     @Override
@@ -106,7 +111,7 @@ public class LocationServiceImp implements LocationService {
                         PageRequest.of(page, perPage)
                 )
                         .stream()
-                        .map(LocationDTO::mapFromEntity)
+                        .map(locationMapper::toDto)
                         .toList()
         );
     }

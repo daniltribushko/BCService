@@ -2,11 +2,13 @@ package ru.tdd.geo.integrations.database.repositories;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.geo.TestcontainersConfiguration;
 import ru.tdd.geo.database.entities.Country;
@@ -24,7 +26,8 @@ import java.util.UUID;
  */
 @DataJpaTest
 @Testcontainers
-@ImportTestcontainers(TestcontainersConfiguration.class)
+@Import(TestcontainersConfiguration.class)
+@DisplayName("Интеграционный тест репозитория стран")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class CountryRepositoryTest {
 
@@ -37,6 +40,7 @@ public class CountryRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное сохранение")
     void saveTest() {
         long expectedCount = countryRepository.count() + 1;
         countryRepository.save(
@@ -48,6 +52,7 @@ public class CountryRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное удаление")
     void deleteTest() {
         Country country = new Country("Delete Test Country");
         countryRepository.save(
@@ -61,6 +66,7 @@ public class CountryRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное получение по идентификатору")
     void findByIdTest() {
         Country country1 = new Country("Test Country Find By Id 1");
         Country country2 = new Country("Test Country Find By Id 2");
@@ -90,6 +96,7 @@ public class CountryRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное обновление")
     void updateTest() {
         Country country = new Country("Test Country Update");
         countryRepository.save(country);
@@ -103,6 +110,7 @@ public class CountryRepositoryTest {
     }
 
     @Test
+    @DisplayName("Получение всех записей")
     void findAllTest() {
         Country country1 = new Country("Country Find All 1");
         Country country2 = new Country("Country Find All 2");
@@ -114,6 +122,7 @@ public class CountryRepositoryTest {
     }
 
     @Test
+    @DisplayName("Полнотекстовый поиск по названию")
     void findByNameTest() {
         Country country1 = new Country("Country");
         Country country2 = new Country("Russia");
@@ -133,6 +142,7 @@ public class CountryRepositoryTest {
     }
 
     @Test
+    @DisplayName("Наличие по названию")
     void existsByNameTest() {
         Country country1 = new Country("CoUntrY");
         Country country2 = new Country("Russia");

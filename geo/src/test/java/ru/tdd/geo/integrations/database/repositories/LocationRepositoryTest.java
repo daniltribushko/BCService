@@ -2,11 +2,12 @@ package ru.tdd.geo.integrations.database.repositories;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.geo.TestcontainersConfiguration;
@@ -17,7 +18,6 @@ import ru.tdd.geo.database.repositories.CityRepository;
 import ru.tdd.geo.database.repositories.CountryRepository;
 import ru.tdd.geo.database.repositories.LocationRepository;
 import ru.tdd.geo.database.specifications.LocationSpecification;
-import ru.tdd.geo.database.specifications.NameSpecification;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +31,8 @@ import java.util.UUID;
 @DataJpaTest
 @Transactional
 @Testcontainers
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@Import(value = TestcontainersConfiguration.class)
+@DisplayName("Тест репозитория локаций")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class LocationRepositoryTest {
 
@@ -52,6 +53,7 @@ public class LocationRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное сохранение")
     void saveTest() {
         Country country = new Country("Save Country Test");
         City city = new City("Save City Test", null, country);
@@ -68,6 +70,7 @@ public class LocationRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное удаление")
     void deleteTest() {
         Country country = new Country("Delete Country Test");
         City city = new City("Delete City Test", null, country);
@@ -85,6 +88,7 @@ public class LocationRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное получение по идентификатору")
     void findByIdTest() {
         Country country = new Country("Find By Id Country Test");
         City city = new City("Find By Id City Test", null, country);
@@ -114,6 +118,7 @@ public class LocationRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное обновление")
     void updateTest() {
         Country country = new Country("Update Country Test");
         City city = new City("Update City Test", null, country);
@@ -134,6 +139,7 @@ public class LocationRepositoryTest {
     }
 
     @Test
+    @DisplayName("Получение всех записей")
     void findAllTest() {
         Country country = new Country("Find All Country Test");
         City city = new City("Find All City Test", null, country);
@@ -149,6 +155,7 @@ public class LocationRepositoryTest {
     }
 
     @Test
+    @DisplayName("Полнотекстовый поиск по названию и городу")
     void findByNameAndCityTest() {
         Country country = new Country("Find By Name Country Test");
         City city1 = new City("Find By Name City Test", null, country);
@@ -187,6 +194,7 @@ public class LocationRepositoryTest {
     }
 
     @Test
+    @DisplayName("Наличие по названию и городу")
     void existsTest() {
         Country country = new Country("Exists By Name Country Test");
         City city = new City("EXists By Name City Test", null, country);

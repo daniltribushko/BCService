@@ -1,6 +1,6 @@
 package ru.tdd.geo.application.models.exceptions.geo.country;
 
-import ru.tdd.geo.application.models.exceptions.NotFoundException;
+import ru.tdd.core.application.exceptions.NotFoundException;
 
 /**
  * @author Tribushko Danil

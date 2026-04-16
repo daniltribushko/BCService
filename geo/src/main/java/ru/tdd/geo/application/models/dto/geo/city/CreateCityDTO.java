@@ -37,7 +37,6 @@ public class CreateCityDTO {
             format = "uuid",
             example = OpenApiConstants.UUID_EXAMPLE
     )
-    @NotBlank(message = "Идентификатор страны обязателен для заполнения")
     private UUID countryId;
 
     public CreateCityDTO() {}

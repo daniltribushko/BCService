@@ -2,11 +2,13 @@ package ru.tdd.geo.integrations.database.repositories;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.geo.TestcontainersConfiguration;
@@ -29,7 +31,8 @@ import java.util.UUID;
 @DataJpaTest
 @Transactional
 @Testcontainers
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@Import(value = TestcontainersConfiguration.class)
+@DisplayName("Тест репозитория регионов")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class RegionRepositoryTest {
 
@@ -46,6 +49,7 @@ public class RegionRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное сохранение")
     void saveTest() {
         Country country = new Country("Save Test Country");
         country.addRegion(new Region("Save Test Region", country));
@@ -58,6 +62,7 @@ public class RegionRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное удаление")
     void deleteTest() {
         Country country = new Country("Delete Test Country");
         Region region = new Region("Delete Test Region", country);
@@ -73,6 +78,7 @@ public class RegionRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное получение по идентификатору")
     void findByIdTest() {
         Country country = new Country("Find By Id Test Country");
         Region region1 = new Region("Find By Id Test Region 1", country);
@@ -98,6 +104,7 @@ public class RegionRepositoryTest {
     }
 
     @Test
+    @DisplayName("Удачное обновление")
     void updateTest() {
         Country country = new Country("Update Test Country");
         Region region = new Region("Update Test Region", country);
@@ -116,6 +123,7 @@ public class RegionRepositoryTest {
     }
 
     @Test
+    @DisplayName("Получение всех записей")
     void findAllTest() {
         Country country = new Country("Find All Test Country");
 
@@ -131,6 +139,7 @@ public class RegionRepositoryTest {
     }
 
     @Test
+    @DisplayName("Полнотекстовый поиск по названию и стране")
     void findByNameAndCountryNameTest() {
         Country country = new Country("Find By Name Test Country");
         Country country1 = new Country("CoUntRY Test");
@@ -164,6 +173,7 @@ public class RegionRepositoryTest {
     }
 
     @Test
+    @DisplayName("Наличие по названию и стране")
     void existsByNameAndCountryTest() {
         Country country1 = new Country("Country 1");
         Country country2 = new Country("Country 2");

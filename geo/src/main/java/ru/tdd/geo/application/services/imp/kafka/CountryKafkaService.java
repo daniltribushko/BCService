@@ -3,13 +3,13 @@ package ru.tdd.geo.application.services.imp.kafka;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.tdd.core.controller.redis.kafka.KafkaService;
+import ru.tdd.core.database.entities.kafka.OutboxEvent;
+import ru.tdd.core.database.repositories.OutboxEventRepository;
 import ru.tdd.geo.application.mappers.CountryMapper;
 import ru.tdd.geo.application.models.dto.DTOMapper;
 import ru.tdd.geo.application.models.enums.event.CountryOutboxEvent;
-import ru.tdd.geo.application.services.KafkaService;
 import ru.tdd.geo.database.entities.Country;
-import ru.tdd.geo.database.entities.OutboxEvent;
-import ru.tdd.geo.database.repositories.OutboxEventRepository;
 
 import java.time.LocalDateTime;
 

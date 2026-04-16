@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.author.TestcontainersConfiguration;
 import ru.tdd.author.database.entitites.Author;
@@ -27,7 +28,7 @@ import java.util.UUID;
  */
 @DataJpaTest
 @Testcontainers
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@Import(value = TestcontainersConfiguration.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("Тестирование репозитория авторов")
 class AuthorRepositoryTest {
@@ -322,6 +323,8 @@ class AuthorRepositoryTest {
     @DisplayName("Поиск по фамилии, отчеству, имени автору, времени создания, времени обновления")
     void findAllByFullFioAndDataTest() {
         Country country = new Country("Россия");
+
+        country.setId(UUID.randomUUID());
 
         countryRepository.save(country);
 

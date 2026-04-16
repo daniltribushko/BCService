@@ -2,11 +2,12 @@ package ru.tdd.geo.integrations.application.services;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.geo.TestcontainersConfiguration;
@@ -36,7 +37,8 @@ import java.util.UUID;
  */
 @SpringBootTest
 @Testcontainers
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@Import(value = TestcontainersConfiguration.class)
+@DisplayName("Интеграционный тест сервиса по работе с городами")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class CityServiceTest {
 
@@ -69,6 +71,7 @@ public class CityServiceTest {
     }
 
     @Test
+    @DisplayName("Удачное создание")
     void createSuccessTest() {
         Country country = new Country("Save Test Country");
 
@@ -93,6 +96,7 @@ public class CityServiceTest {
     }
 
     @Test
+    @DisplayName("Неудачное создание - страна уже создана")
     void createAlreadyExistsFailTest() {
         Country country = new Country("Already Exists Country");
 
@@ -107,33 +111,36 @@ public class CityServiceTest {
                 () -> cityService.create(new CreateCityDTO("Already Exists City", null, country.getId()))
         );
 
-        Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
         Assertions.assertEquals("Город с указанным названием, страной, регионом уже создан", actual.getMessage());
     }
 
     @Test
+    @DisplayName("Неудачное создание - регион не найден")
     void createRegionNotFoundFailTest() {
         RegionByIdNotFoundException actual = Assertions.assertThrows(
                 RegionByIdNotFoundException.class,
                 () -> cityService.create(new CreateCityDTO("New City", UUID.randomUUID(), null))
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals("Регион с указанным идентификатором не найден", actual.getMessage());
     }
 
     @Test
+    @DisplayName("Неудачное создание - страна не найдена")
     void createCountryNouFoundFailTest() {
         CountryByIdNotFoundException actual = Assertions.assertThrows(
                 CountryByIdNotFoundException.class,
                 () -> cityService.create(new CreateCityDTO("New City", null, UUID.randomUUID()))
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
     }
 
     @Test
+    @DisplayName("Удачное обновление")
     void updateSuccessTest() {
         Country country1 = new Country("Country For Update 1");
         Country country2 = new Country("Country For Update 2");
@@ -168,17 +175,19 @@ public class CityServiceTest {
     }
 
     @Test
+    @DisplayName("Неудачное обновление - город не найден")
     void updateCityNotFoundFailTest() {
         CityByIdNotFoundException actual = Assertions.assertThrows(
                 CityByIdNotFoundException.class,
                 () -> cityService.update(UUID.randomUUID(), new UpdateCityDTO())
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals("Город с указанным идентификатором не найден", actual.getMessage());
     }
 
     @Test
+    @DisplayName("Неудачное обновление - регион не найден")
     void updateRegionNotFoundFailTest() {
         Country country = new Country("Test Country");
 
@@ -193,11 +202,12 @@ public class CityServiceTest {
                 () -> cityService.update(city.getId(), new UpdateCityDTO(null, UUID.randomUUID(), null))
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals("Регион с указанным идентификатором не найден", actual.getMessage());
     }
 
     @Test
+    @DisplayName("Неудачное обновление - страна не найдена")
     void updateCountryNotFoundFailTest() {
         Country country = new Country("Test Country 2");
 
@@ -212,11 +222,12 @@ public class CityServiceTest {
                 () -> cityService.update(city.getId(), new UpdateCityDTO(null, null, UUID.randomUUID()))
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
     }
 
     @Test
+    @DisplayName("Неудачное обновление - город уже создан")
     void updateAlreadyExistsFailTest() {
         Country country1 = new Country("Test Update Country 1");
         Country country2 = new Country("Test Update Country 2");
@@ -244,11 +255,12 @@ public class CityServiceTest {
                 )
         );
 
-        Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual1.getStatusCode());
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual1.getStatusCode());
         Assertions.assertEquals("Город с указанным названием, страной, регионом уже создан", actual1.getMessage());
     }
 
     @Test
+    @DisplayName("Удачное получение по идентификатору")
     void getByIdSuccessTest() {
         Country country = new Country("Get By Id Test Country");
 
@@ -269,17 +281,19 @@ public class CityServiceTest {
     }
 
     @Test
+    @DisplayName("Неудачное получение по идентификатору - город не найден")
     void getByIdNotFoundTest() {
         CityByIdNotFoundException actual = Assertions.assertThrows(
                 CityByIdNotFoundException.class,
                 () -> cityService.getById(UUID.randomUUID())
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals("Город с указанным идентификатором не найден", actual.getMessage());
     }
 
     @Test
+    @DisplayName("Удачное удаление")
     void deleteSuccessTest() {
         Country country = new Country("City's Country For Delete");
 

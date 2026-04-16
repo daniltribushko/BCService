@@ -1,11 +1,12 @@
 package ru.tdd.geo.integrations.controllers;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -20,7 +21,6 @@ import ru.tdd.geo.application.utils.URLUtils;
 import ru.tdd.geo.database.entities.Country;
 import ru.tdd.geo.database.repositories.CountryRepository;
 
-import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,7 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @SpringBootTest
 @AutoConfigureMockMvc
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@DisplayName("Тест контроллера стран")
+@Import(value = TestcontainersConfiguration.class)
 class CountryControllerTest {
 
     private static final String BASE_URL = "/geo/countries";
@@ -56,6 +57,7 @@ class CountryControllerTest {
     }
 
     @Test
+    @DisplayName("Удачное создание")
     @WithMockUser(username = "admin", roles = {"ADMIN"})
     void createTest() throws Exception {
         CreateCountryDTO createDto = new CreateCountryDTO("New Country");
@@ -72,6 +74,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "not_admin")
+    @DisplayName("Не удачное создание - пользователь не является администратором")
     void createNotAdminFailTest() throws Exception {
         CreateCountryDTO createDto = new CreateCountryDTO("New Country");
 
@@ -85,6 +88,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("Не удачное создание - страна уже создана")
     void createAlreadyExistsFailTest() throws Exception {
         countryRepository.save(new Country("Already Exists Country"));
 
@@ -103,6 +107,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Удачное обновление")
     void updateSuccessTest() throws Exception {
         Country country = new Country("Country For Update");
 
@@ -121,6 +126,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Не удачное обновление - пользователь не является администратором")
     void updateNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
@@ -133,6 +139,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Не удачное обновление - страна не найдена")
     void updateNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
@@ -149,6 +156,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Не удачное обновление - страна уже создана")
     void updateAlreadyExistsFailTest() throws Exception {
         Country country1 = new Country("Test Country");
         Country country2 = new Country("Already Exists Country");
@@ -168,6 +176,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Удачное удаление")
     void deleteSuccessTest() throws Exception {
         Country country = new Country("Country For Delete");
 
@@ -182,6 +191,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Не удачное удаление - пользователь не является администратором")
     void deleteNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 delete(BASE_URL + "/" + UUID.randomUUID())
@@ -192,6 +202,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Не удачное удаление - страна не найдена")
     void deleteNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 delete(BASE_URL + "/" + UUID.randomUUID())
@@ -202,6 +213,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Удачное получение по идентификатору")
     void findByIdSuccessTest() throws Exception {
         Country country = new Country("Test Country Find By Id");
         countryRepository.save(country);
@@ -217,6 +229,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Не удачное получение по идентификатору - страна не найдена")
     void findByIdNotFoundTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 get(BASE_URL + "/" + UUID.randomUUID())
@@ -227,6 +240,7 @@ class CountryControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Получение списка с фильтрами")
     void findAllSuccessTest() throws Exception {
         Country country1 = new Country("Россия");
         Country country2 = new Country("США");

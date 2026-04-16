@@ -1,5 +1,6 @@
 package ru.tdd.geo.application.services;
 
+import org.springframework.transaction.annotation.Transactional;
 import ru.tdd.geo.application.models.dto.geo.region.*;
 
 import java.util.UUID;
@@ -9,21 +10,25 @@ import java.util.UUID;
  * @since 07.01.2026
  * Сервис для работы с регионами
  */
+@Transactional(readOnly = true)
 public interface RegionService {
 
     /**
      * Создание региона
      */
+    @Transactional
     RegionDTO create(CreateRegionDTO dto);
 
     /**
      * Обновление региона
      */
+    @Transactional
     RegionDTO update(UUID id, UpdateRegionDTO dto);
 
     /**
      * Удаление региона
      */
+    @Transactional
     void delete(UUID id);
 
     /**

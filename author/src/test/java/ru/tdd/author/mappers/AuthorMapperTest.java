@@ -12,6 +12,7 @@ import ru.tdd.author.application.mappers.AuthorMapper;
 import ru.tdd.author.database.entitites.Author;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -58,13 +59,18 @@ public class AuthorMapperTest {
     void mapAuthorDetailsTest() {
         CountryDTO country = new CountryDTO(UUID.randomUUID(), "Россия");
 
+        Author author =  new Author(
+                "Иванов",
+                null,
+                "Иван",
+                country.getId()
+        );
+
+        author.setCreationTime(LocalDateTime.now());
+        author.setUpdateTime(LocalDateTime.now());
+
         AuthorDetailsDTO actual = authorMapper.toDetailsDto(
-                new Author(
-                        "Иванов",
-                        null,
-                        "Иван",
-                        country.getId()
-                ),
+                author,
                 country
         );
 

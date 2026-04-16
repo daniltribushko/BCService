@@ -2,11 +2,12 @@ package ru.tdd.geo.integrations.controllers;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -39,7 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @Testcontainers
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@DisplayName("Тест контроллера локаций")
+@Import(value = TestcontainersConfiguration.class)
 @AutoConfigureMockMvc
 public class LocationControllerTest {
 
@@ -74,6 +76,7 @@ public class LocationControllerTest {
     }
 
     @Test
+    @DisplayName("Успешное сохранение")
     @WithMockUser(username = "admin", roles = "ADMIN")
     void saveSuccessTest() throws Exception {
         Country country = new Country("Test Country 1");
@@ -108,6 +111,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Неудачное сохранение - пользователь не является администратором")
     void saveNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 post(BASE_URL)
@@ -127,6 +131,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Неудачное сохранение - город не найден")
     void saveCityNoyFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 post(BASE_URL)
@@ -134,7 +139,7 @@ public class LocationControllerTest {
                         .content(
                                 DTOMapper.toJson(
                                         new CreateLocationDTO(
-                                                "",
+                                                "Тест",
                                                 UUID.randomUUID()
                                         )
                                 )
@@ -152,6 +157,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Неудачное сохранение - локация уже создана")
     void saveAlreadyExistsFailTest() throws Exception {
         Country country = new Country("Test Country 1");
 
@@ -189,6 +195,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Удачное обновление")
     void updateSuccessTest() throws Exception {
         Country country = new Country("Test Country 1");
 
@@ -280,6 +287,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Неудачное обновление - пользователь не является администратором")
     void updateNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
@@ -296,6 +304,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Неудачное обновление - локация не найдена")
     void updateLocationNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
@@ -318,6 +327,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Неудачное обновление - город не найден")
     void updateCityNotFoundFailTest() throws Exception {
         Country country = new Country("Test Country 1");
 
@@ -355,6 +365,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Неудачное обновление - локация уже создана")
     void updateAlreadyExistsFailTest() throws Exception {
         Country country = new Country("Test Country 1");
 
@@ -393,6 +404,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Удачное удаление")
     void deleteSuccessTest() throws Exception {
         Country country = new Country("Test Country 1");
 
@@ -420,6 +432,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Неудачное удаление - пользователь не является администратором")
     void deleteNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 delete(BASE_URL + "/" + UUID.randomUUID())
@@ -430,6 +443,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("Неудачное удаление - локация не найдена")
     void deleteNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 delete(BASE_URL + "/" + UUID.randomUUID())
@@ -446,6 +460,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Удачное получение по идентификатору")
     void findByIdSuccessTest() throws Exception {
         Country country = new Country("Test Country 1");
 
@@ -473,6 +488,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Неудачное получение по идентификатору - локация не найдена")
     void findByIdNotFoundFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 get(BASE_URL + "/" + UUID.randomUUID())
@@ -489,6 +505,7 @@ public class LocationControllerTest {
 
     @Test
     @WithMockUser(username = "user")
+    @DisplayName("Получение списка с фильтрами")
     void findAllTest() throws Exception {
         Country country = new Country("Test Country 1");
 

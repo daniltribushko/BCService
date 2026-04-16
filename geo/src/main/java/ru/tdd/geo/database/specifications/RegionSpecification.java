@@ -1,7 +1,7 @@
 package ru.tdd.geo.database.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import ru.tdd.geo.application.utils.TextUtils;
+import ru.tdd.core.application.utils.TextUtils;
 import ru.tdd.geo.database.entities.Region;
 
 import java.util.UUID;
@@ -36,7 +36,7 @@ public interface RegionSpecification {
     static Specification<Region> byNameAndCountryNameFullTextSearch(String name, String countryName) {
         return (root, cr, cb) ->
                 cb.and(
-                        TextUtils.isEmptyWithNull(name) ?
+                        TextUtils.isEmpty(name) ?
                                 cb.conjunction() :
                                 cb.like(
                                         cb.lower(
@@ -44,7 +44,7 @@ public interface RegionSpecification {
                                         ),
                                         "%" + name.toLowerCase() + "%"
                                 ),
-                        TextUtils.isEmptyWithNull(countryName) ? cb.conjunction() :
+                        TextUtils.isEmpty(countryName) ? cb.conjunction() :
                                 cb.like(
                                         cb.lower(
                                                 root.join("country").get("name")

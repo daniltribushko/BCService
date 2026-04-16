@@ -3,6 +3,7 @@ package ru.tdd.geo.database.entities;
 import jakarta.persistence.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import ru.tdd.core.database.entities.BaseEntity;
 
 import java.util.HashSet;
 import java.util.Set;

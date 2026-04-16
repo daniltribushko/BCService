@@ -3,7 +3,6 @@ package ru.tdd.geo.application.models.dto.geo.location;
 import io.swagger.v3.oas.annotations.media.Schema;
 import ru.tdd.geo.application.models.constants.OpenApiConstants;
 import ru.tdd.geo.application.models.dto.geo.city.CityDTO;
-import ru.tdd.geo.database.entities.Location;
 
 import java.util.UUID;
 
@@ -43,14 +42,6 @@ public class LocationDTO {
         this.id = id;
         this.name = name;
         this.city = city;
-    }
-
-    public static LocationDTO mapFromEntity(Location location) {
-        return new LocationDTO(
-            location.getId(),
-                location.getName(),
-                CityDTO.mapFromEntity(location.getCity())
-        );
     }
 
     public UUID getId() {

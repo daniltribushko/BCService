@@ -2,23 +2,22 @@ package ru.tdd.geo.integrations.application.services;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ru.tdd.core.application.exceptions.AlreadyExistsException;
+import ru.tdd.core.application.exceptions.NotFoundException;
 import ru.tdd.geo.TestcontainersConfiguration;
 import ru.tdd.geo.application.models.dto.geo.country.*;
-import ru.tdd.geo.application.models.exceptions.AlreadyExistsException;
-import ru.tdd.geo.application.models.exceptions.NotFoundException;
 import ru.tdd.geo.application.services.CountryService;
 import ru.tdd.geo.database.entities.Country;
 import ru.tdd.geo.database.repositories.CountryRepository;
 
-import java.time.ZoneId;
 import java.util.UUID;
 
 /**
@@ -28,7 +27,8 @@ import java.util.UUID;
  */
 @SpringBootTest
 @Testcontainers
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@Import(value = TestcontainersConfiguration.class)
+@DisplayName("Интеграционный тест сервиса стран")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class CountryServiceTest {
 
@@ -44,7 +44,7 @@ public class CountryServiceTest {
     }
 
     @Test
-    @Transactional
+    @DisplayName("Удачное создание")
     void saveSuccessTest() {
         long expectedCount = countryRepository.count() + 1;
         CountryDTO countryDTO = countryService.create(new CreateCountryDTO("New Country"));
@@ -55,7 +55,7 @@ public class CountryServiceTest {
     }
 
     @Test
-    @Transactional
+    @DisplayName("Неудачное создание - страна уже создана")
     void saveAlreadyExistsFailTest() {
         countryRepository.save(new Country("Already Exists Country"));
 
@@ -64,12 +64,12 @@ public class CountryServiceTest {
                 () -> countryService.create(new CreateCountryDTO("Already Exists Country"))
         );
 
-        Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
         Assertions.assertEquals("Страна с указанным названием уже создана", actual.getMessage());
     }
 
     @Test
-    @Transactional
+    @DisplayName("Удачное обновление")
     void updateSuccessTest() {
         Country country1 = new Country("Country For Update");
         Country country2 = new Country("Country For Update Time Zone");
@@ -105,7 +105,7 @@ public class CountryServiceTest {
     }
 
     @Test
-    @Transactional
+    @DisplayName("Неудачное обновление - страна уже создана")
     void updateAlreadyExistsFail() {
         Country country1 = new Country("Already Exists Country");
         Country country2 = new Country("Country For Fail Update");
@@ -118,12 +118,12 @@ public class CountryServiceTest {
                 () -> countryService.update(country2.getId(), new UpdateCountryDTO("Already Exists Country"))
         );
 
-        Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
         Assertions.assertEquals("Страна с указанным названием уже создана", actual.getMessage());
     }
 
     @Test
-    @Transactional
+    @DisplayName("Удачное удаление")
     void deleteSuccessTest() {
         Country country = new Country("Country For Delete");
         countryRepository.save(country);
@@ -135,19 +135,19 @@ public class CountryServiceTest {
     }
 
     @Test
-    @Transactional
+    @DisplayName("Неудачное удаление - страна не найдена")
     void deleteNotFoundFailTest() {
         NotFoundException actual = Assertions.assertThrows(
                 NotFoundException.class,
                 () -> countryService.delete(UUID.randomUUID())
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
     }
 
     @Test
-    @Transactional
+    @DisplayName("Удачное получение по идентификатору")
     void findByIdSuccessTest() {
         Country country = new Country("Find By Id Test Country");
         countryRepository.save(country);
@@ -159,18 +159,19 @@ public class CountryServiceTest {
     }
 
     @Test
-    @Transactional
+    @DisplayName("Неудачное получение по идентификатору - страна не найдена")
     void findByIdNotFoundFailTest() {
         NotFoundException actual = Assertions.assertThrows(
                 NotFoundException.class,
                 () -> countryService.getById(UUID.randomUUID())
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
     }
 
     @Test
+    @DisplayName("Полнотекстовый поиск по названию")
     void findAllTest() {
         Country country1 = new Country("Russia");
         Country country2 = new Country("USA");

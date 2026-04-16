@@ -5,11 +5,8 @@ import ru.tdd.geo.application.models.constants.OpenApiConstants;
 import ru.tdd.geo.application.models.dto.geo.country.CountryDTO;
 import ru.tdd.geo.application.models.dto.geo.location.LocationDTO;
 import ru.tdd.geo.application.models.dto.geo.region.RegionDTO;
-import ru.tdd.geo.database.entities.City;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -62,20 +59,6 @@ public class CityDetailsDTO {
         this.region = region;
         this.country = country;
         this.locations = locations;
-    }
-
-    public static CityDetailsDTO mapFromEntity(City city) {
-        return new CityDetailsDTO(
-                city.getId(),
-                city.getName(),
-                Optional.ofNullable(city.getRegion()).map(RegionDTO::mapFromEntity).orElse(null),
-                CountryDTO.mapFromEntity(city.getCountry()),
-                city.getLocations()
-                        .stream()
-                        .map(LocationDTO::mapFromEntity)
-                        .sorted(Comparator.comparing(LocationDTO::getName))
-                        .toList()
-        );
     }
 
     public UUID getId() {

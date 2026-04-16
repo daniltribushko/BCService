@@ -2,9 +2,10 @@ package ru.tdd.geo.application.models.dto.geo.region;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import ru.tdd.geo.application.models.constants.OpenApiConstants;
+import ru.tdd.geo.application.models.dto.geo.city.CityDTO;
 import ru.tdd.geo.application.models.dto.geo.country.CountryDTO;
-import ru.tdd.geo.database.entities.Region;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,20 +38,19 @@ public class RegionDetailsDTO {
     )
     private CountryDTO countryDTO;
 
+    @Schema(
+            name = "cities",
+            description = "Список городов региона"
+    )
+    private List<CityDTO> cities;
+
     public RegionDetailsDTO() {}
 
-    public RegionDetailsDTO(UUID id, String name, CountryDTO countryDTO) {
+    public RegionDetailsDTO(UUID id, String name, CountryDTO countryDTO, List<CityDTO> cities) {
         this.id = id;
         this.name = name;
         this.countryDTO = countryDTO;
-    }
-
-    public static RegionDetailsDTO mapFromEntity(Region region) {
-        return new RegionDetailsDTO(
-                region.getId(),
-                region.getName(),
-                CountryDTO.mapFromEntity(region.getCountry())
-        );
+        this.cities = cities;
     }
 
     public UUID getId() {
@@ -75,5 +75,13 @@ public class RegionDetailsDTO {
 
     public void setCountryDTO(CountryDTO countryDTO) {
         this.countryDTO = countryDTO;
+    }
+
+    public List<CityDTO> getCities() {
+        return cities;
+    }
+
+    public void setCities(List<CityDTO> cities) {
+        this.cities = cities;
     }
 }

@@ -8,10 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.author.TestcontainersConfiguration;
 import ru.tdd.author.application.dto.authors.CreateAuthorDTO;
@@ -38,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @Testcontainers
-@ImportTestcontainers(TestcontainersConfiguration.class)
+@Import(TestcontainersConfiguration.class)
 @AutoConfigureMockMvc
 @DisplayName("Контроллер авторов")
 public class AuthorControllerTest {
@@ -73,6 +75,8 @@ public class AuthorControllerTest {
     @WithMockUser(username = "admin", roles = "ADMIN")
     void successTest() throws Exception {
         Country country = new Country("Россия");
+
+        country.setId(UUID.randomUUID());
 
         countryRepository.save(country);
 
@@ -199,6 +203,9 @@ public class AuthorControllerTest {
     void updateSuccessTest() throws Exception {
         Country country1 = new Country("Россия");
         Country country2 = new Country("Китай");
+
+        country1.setId(UUID.randomUUID());
+        country2.setId(UUID.randomUUID());
 
         countryRepository.saveAll(List.of(country1, country2));
 
@@ -347,6 +354,8 @@ public class AuthorControllerTest {
     void getByIdSuccessTest() throws Exception {
         Country country = new Country("Россия");
 
+        country.setId(UUID.randomUUID());
+
         countryRepository.save(country);
 
         Author author1 = new Author(
@@ -422,10 +431,12 @@ public class AuthorControllerTest {
     }
 
     @Test
+    @Transactional
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Удачное удаление")
     void deleteSuccess() throws Exception {
         Country country = new Country("Россия");
+        country.setId(UUID.randomUUID());
 
         countryRepository.save(country);
 

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.author.TestcontainersConfiguration;
@@ -24,7 +25,7 @@ import java.util.UUID;
  */
 @Testcontainers
 @SpringBootTest
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@Import(value = TestcontainersConfiguration.class)
 @DisplayName("Тестирование сервиса по работе со странами в редис")
 class CountryRedisServiceTest {
 
@@ -55,6 +56,8 @@ class CountryRedisServiceTest {
     @DisplayName("Получение из редиса, когда в редисе нету страны, но она есть в бд")
     void getFromRepositoryTest() {
         Country country = new Country("Россия");
+
+        country.setId(UUID.randomUUID());
 
         countryRepository.save(country);
 
