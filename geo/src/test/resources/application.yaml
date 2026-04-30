@@ -1,0 +1,7 @@
+spring:
+  kafka:
+    group: "test-group"
+    value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+apache-kafka:
+  topics:
+    country: bc.country

@@ -35,7 +35,7 @@ public class OutboxEventSender {
     }
 
     @Scheduled(cron = "30 * * * * *")
-    void sendCountryEvents() {
+    public void sendCountryEvents() {
         List<OutboxEvent> events = outboxEventRepository.findAllByEntityName(Country.class.getName());
         events.forEach(event -> {
             kafkaTemplate.send(countryTopic, outboxEventMapper.toDto(event));

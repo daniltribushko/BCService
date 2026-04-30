@@ -35,18 +35,4 @@ public class TestcontainersConfiguration {
         return new GenericContainer<>(DockerImageName.parse("redis:latest"))
                 .withExposedPorts(6379);
     }
-
-   /* @Container
-    public static GenericContainer<?> redisContainer = new GenericContainer<>("redis:latest")
-            .withExposedPorts(6379);
-
-    static {
-        redisContainer.start();
-    }
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.redis.host", redisContainer::getHost);
-        registry.add("spring.data.redis.port", () -> redisContainer.getMappedPort(6379));
-    }*/
 }
