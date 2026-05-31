@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bc_book_test_db
+  jpa:
+    hibernate:
+      ddl-auto: update
+jwt:
+  secret: feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac
+logging:
+  level:
+    org:
+      springframework:
+        beans:
+          factory=TRACE:

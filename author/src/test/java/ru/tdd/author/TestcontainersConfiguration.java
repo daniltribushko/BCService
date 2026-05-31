@@ -24,7 +24,7 @@ public class TestcontainersConfiguration {
 
     @Bean
     @ServiceConnection(name = "redis")
-    public GenericContainer<?> redisContainer() {
+    public static GenericContainer<?> redisContainer() {
         return new GenericContainer<>("redis:latest")
                 .withExposedPorts(6379);
     }

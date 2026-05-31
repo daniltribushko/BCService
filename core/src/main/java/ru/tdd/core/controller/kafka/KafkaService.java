@@ -1,4 +1,4 @@
-package ru.tdd.core.controller.redis.kafka;
+package ru.tdd.core.controller.kafka;
 
 import ru.tdd.core.application.enums.kafka_events.OutboxEventType;
 import ru.tdd.core.database.entities.BaseEntity;

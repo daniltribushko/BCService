@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bc_book_db
+    username: root
+    password: 123
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    baseline-on-migrate: true
+server:
+  port: 8004
+  servlet:
+    context-path: /api/v1
+jwt:
+  secret: feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac
+springdoc:
+  swagger-ui:
+    url: /book/docs
+    path: /book/docs/swagger-ui.html
+    disable-swagger-default-url: true
+  api-docs:
+    path: /book/docs
+    enabled: true

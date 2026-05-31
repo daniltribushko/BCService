@@ -16,6 +16,9 @@ spring:
       database: 2
   Kafka:
     bootstrap-servers: localhost:9092
+    consumer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 apache-kafka:
   topics:
     country: bc.country
