@@ -2,8 +2,7 @@ plugins {
     id 'java'
 }
 
-group = 'ru.tdd.bc'
-version = '1.0.0'
+description = 'redis'
 
 repositories {
     mavenCentral()
