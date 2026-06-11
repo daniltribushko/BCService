@@ -1,0 +1,21 @@
+package ru.tdd.bc.openapi.annotations.author;
+
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.*;
+
+/**
+ * @author Tribushko Danil
+ * @since 09.06.2026
+ * Аннотация для описания идентификатора автора книги в спецификации open-api
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target({PARAMETER, METHOD, FIELD, ANNOTATION_TYPE})
+@Parameter(name = "authorId", description = "Идентификатор автора книги", required = true, in = ParameterIn.PATH)
+public @interface AuthorIdPathParameter {
+}

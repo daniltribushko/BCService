@@ -1,0 +1,14 @@
+plugins {
+    id 'java'
+}
+
+group = 'ru.tdd.bc'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+test {
+    useJUnitPlatform()
+}
