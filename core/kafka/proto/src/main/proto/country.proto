@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package ru.tdd.bc.proto.geo;
+
+option java_package = "ru.tdd.bc.proto.geo";
+option java_multiple_files = true;
+option java_outer_classname = "CountryProto";
+
+message Country {
+  string id = 1;
+  string name = 2;
+}

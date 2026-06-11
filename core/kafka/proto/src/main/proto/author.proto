@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package ru.tdd.bc.proto.author;
+
+option java_package = "ru.tdd.bc.proto.author";
+option java_multiple_files = true;
+option java_outer_classname = "AuthorDto";
+
+message Author {
+  string id = 1;
+  string last_name = 2;
+  optional string middle_name = 3;
+  string first_name = 4;
+  string country_id = 5;
+}

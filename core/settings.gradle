@@ -1,1 +1,11 @@
 rootProject.name = 'core'
+
+include 'exceptions'
+include 'imp'
+include 'database'
+include 'kafka'
+include 'kafka:proto'
+include 'kafka:kafka-core'
+include 'redis'
+include 'openapi'
+include 'security'
