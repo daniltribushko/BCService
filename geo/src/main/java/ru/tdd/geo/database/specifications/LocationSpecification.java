@@ -1,7 +1,7 @@
 package ru.tdd.geo.database.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import ru.tdd.core.application.utils.TextUtils;
+import ru.tdd.bc.database.criteria.CriteriaHelper;
 import ru.tdd.geo.database.entities.Location;
 
 import java.util.UUID;
@@ -13,28 +13,39 @@ import java.util.UUID;
  */
 public interface LocationSpecification {
 
-    /** Поиск по названиею и идентификатору города */
+    /**
+     * Поиск по названиею и идентификатору города
+     */
     static Specification<Location> byNameAndCityIdEqual(String name, UUID id) {
-        return (root, cr, cb) ->
-                cb.and(
-                        cb.equal(cb.lower(root.get("name")), name.toLowerCase()),
-                        cb.equal(root.join("city").get("id"), id)
-                );
+        return (root, cr, cb) -> {
+            var helper = new CriteriaHelper<>(root, cr, cb);
+            return cb.and(
+                    helper.equal("name", name)
+                            .equal(root.join("city").get("id"), id)
+                            .build()
+            );
+        };
     }
 
-    /** Поиск по названию локации и названию города */
-    static Specification<Location> byNameAndCityNameFulltextSearch(String name, String cityName) {
-        return (root, cr, cb) ->
-                cb.and(
-                        TextUtils.isEmpty(name) ?
-                                cb.conjunction() :
-                                cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"),
-                        TextUtils.isEmpty(cityName) ?
-                                cb.conjunction() :
-                                cb.like(
-                                        cb.lower(root.join("city").get("name")),
-                                        "%" + cityName.toLowerCase() + "%"
-                                )
-                );
+    /**
+     * Поиск по названию локации и названию города
+     */
+    static Specification<Location> byNameAndCityNameFulltextSearch(
+            String name,
+            String cityName,
+            String regionName,
+            String countryName
+    ) {
+        return (root, cr, cb) -> {
+            var helper = new CriteriaHelper<>(root, cr, cb);
+            return cb.and(
+                    helper.like("name", name)
+                            .like(root.join("city").get("name"), cityName)
+                            .like(root.join("city").join("region").get("name"), regionName)
+                            .like(root.join("city").join("country").get("name"), countryName)
+                            .build()
+
+            );
+        };
     }
 }

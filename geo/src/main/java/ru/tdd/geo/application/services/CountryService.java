@@ -25,5 +25,5 @@ public interface CountryService {
 
     CountryDetailsDTO getById(UUID id);
 
-    CountriesDTO getAll(String name, int page, int perPage);
+    CountryListData getAll(String name, int page, int perPage);
 }

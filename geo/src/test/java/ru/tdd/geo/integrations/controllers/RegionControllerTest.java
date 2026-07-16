@@ -1,5 +1,6 @@
 package ru.tdd.geo.integrations.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.geo.TestcontainersConfiguration;
-import ru.tdd.geo.application.models.dto.DTOMapper;
 import ru.tdd.geo.application.models.dto.geo.region.CreateRegionDTO;
 import ru.tdd.geo.application.models.dto.geo.region.UpdateRegionDTO;
 import ru.tdd.geo.application.utils.URLUtils;
@@ -51,11 +51,19 @@ class RegionControllerTest {
 
     private final RegionRepository regionRepository;
 
+    private final ObjectMapper objectMapper;
+
     @Autowired
-    RegionControllerTest(MockMvc mockMvc, CountryRepository countryRepository, RegionRepository regionRepository) {
+    RegionControllerTest(
+            MockMvc mockMvc,
+            CountryRepository countryRepository,
+            RegionRepository regionRepository,
+            ObjectMapper objectMapper
+    ) {
         this.mockMvc = mockMvc;
         this.countryRepository = countryRepository;
         this.regionRepository = regionRepository;
+        this.objectMapper = objectMapper;
     }
 
     @BeforeEach
@@ -77,7 +85,7 @@ class RegionControllerTest {
         ResultActions response = mockMvc.perform(
                 post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(dto))
+                        .content(objectMapper.writeValueAsString(dto))
         );
 
         response.andExpect(status().isCreated())
@@ -92,7 +100,14 @@ class RegionControllerTest {
         ResultActions response = mockMvc.perform(
                 post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new CreateRegionDTO("Region For Create", UUID.randomUUID())))
+                        .content(
+                                objectMapper.writeValueAsString(
+                                        new CreateRegionDTO(
+                                                "Region For Create",
+                                                UUID.randomUUID()
+                                        )
+                                )
+                        )
         );
 
         response.andExpect(status().isForbidden());
@@ -115,7 +130,9 @@ class RegionControllerTest {
         ResultActions response = mockMvc.perform(
                 post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(dto))
+                        .content(
+                                objectMapper.writeValueAsString(dto)
+                        )
         );
 
         response.andExpect(status().isConflict())
@@ -148,19 +165,25 @@ class RegionControllerTest {
         ResultActions response1 = mockMvc.perform(
                 put(BASE_URL + "/" + region1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(dto1))
+                        .content(
+                                objectMapper.writeValueAsString(dto1)
+                        )
         );
 
         ResultActions response2 = mockMvc.perform(
                 put(BASE_URL + "/" + region1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(dto2))
+                        .content(
+                                objectMapper.writeValueAsString(dto2)
+                        )
         );
 
         ResultActions response3 = mockMvc.perform(
                 put(BASE_URL + "/" + region2.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(dto3))
+                        .content(
+                                objectMapper.writeValueAsString(dto3)
+                        )
         );
 
         response1.andExpect(status().isOk())
@@ -184,7 +207,9 @@ class RegionControllerTest {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateRegionDTO("Region", UUID.randomUUID())))
+                        .content(
+                                objectMapper.writeValueAsString(new UpdateRegionDTO("Region", UUID.randomUUID()))
+                        )
         );
 
         response.andExpect(status().isForbidden());
@@ -197,7 +222,7 @@ class RegionControllerTest {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateRegionDTO(null, null)))
+                        .content(objectMapper.writeValueAsString(new UpdateRegionDTO(null, null)))
         );
 
         response.andExpect(status().isNotFound())
@@ -219,7 +244,7 @@ class RegionControllerTest {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + region.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateRegionDTO(null, UUID.randomUUID())))
+                        .content(objectMapper.writeValueAsString(new UpdateRegionDTO(null, UUID.randomUUID())))
         );
 
         response.andExpect(status().isNotFound())
@@ -244,13 +269,27 @@ class RegionControllerTest {
         ResultActions response1 = mockMvc.perform(
                 put(BASE_URL + "/" + region1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateRegionDTO("Already Exists Region", null)))
+                        .content(
+                                objectMapper.writeValueAsString(
+                                        new UpdateRegionDTO(
+                                                "Already Exists Region",
+                                                null
+                                        )
+                                )
+                        )
         );
 
         ResultActions response2 = mockMvc.perform(
                 put(BASE_URL + "/" + region1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateRegionDTO("Already Exists Region", country2.getId())))
+                        .content(
+                                objectMapper.writeValueAsString(
+                                        new UpdateRegionDTO(
+                                                "Already Exists Region",
+                                                country2.getId()
+                                        )
+                                )
+                        )
         );
 
         response1.andExpect(status().isConflict())
@@ -372,11 +411,11 @@ class RegionControllerTest {
         );
 
         ResultActions response3 = mockMvc.perform(
-          get(
-                  URLUtils.builder(BASE_URL)
-                          .addQueryParameter("name", "tE", false)
-                          .build()
-          )
+                get(
+                        URLUtils.builder(BASE_URL)
+                                .addQueryParameter("name", "tE", false)
+                                .build()
+                )
         );
 
         response1.andExpect(status().isOk())

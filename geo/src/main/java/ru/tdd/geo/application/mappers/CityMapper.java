@@ -7,6 +7,8 @@ import ru.tdd.geo.application.models.dto.geo.city.CityDTO;
 import ru.tdd.geo.application.models.dto.geo.city.CityDetailsDTO;
 import ru.tdd.geo.database.entities.City;
 
+import java.util.List;
+
 /**
  * @author Tribushko Danil
  * @since 14.04.2026
@@ -19,6 +21,8 @@ import ru.tdd.geo.database.entities.City;
 public interface CityMapper {
 
     CityDTO toDto(City city);
+
+    List<CityDTO> toDto(List<City> cities);
 
     @Mapping(target = "locations", ignore = true)
     CityDetailsDTO toDetailsDto(City city);

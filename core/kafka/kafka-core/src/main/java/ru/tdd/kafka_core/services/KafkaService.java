@@ -8,7 +8,7 @@ import ru.tdd.kafka_core.entities.OutboxEventType;
  * @since 28.02.2026
  * Сервис для отправки данных в kafka
  */
-public interface KafkaService<E extends OutboxEventType, T extends BaseEntity> {
+public interface KafkaService<T extends BaseEntity> {
 
-    void send(E type, T entity);
+    void send(OutboxEventType type, T entity);
 }

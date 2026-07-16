@@ -12,8 +12,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
-import ru.tdd.core.application.exceptions.AlreadyExistsException;
-import ru.tdd.core.application.exceptions.NotFoundException;
+import ru.tdd.bc.http.AlreadyExistsException;
+import ru.tdd.bc.http.NotFoundException;
 import ru.tdd.geo.application.mappers.CountryMapper;
 import ru.tdd.geo.application.models.dto.geo.country.*;
 import ru.tdd.geo.application.services.imp.CountryServiceImp;
@@ -231,7 +231,7 @@ class CountryServiceTest {
                 )
                 .thenReturn(countries);
 
-        CountriesDTO actual = countryServiceImp.getAll("test", 0, 2);
+        CountryListData actual = countryServiceImp.getAll("test", 0, 2);
 
         Mockito.verify(countryRepository).findAll(any(Specification.class), any(PageRequest.class));
         Assertions.assertEquals(2, actual.getData().size());

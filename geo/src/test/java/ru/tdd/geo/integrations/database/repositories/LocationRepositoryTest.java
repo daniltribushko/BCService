@@ -172,19 +172,21 @@ public class LocationRepositoryTest {
         List<Location> locations1 = locationRepository.findAll(
                 LocationSpecification.byNameAndCityNameFulltextSearch(
                         "Loc",
-                        "cit"
+                        "cit",
+                        null,
+                        null
                 )
         );
 
         List<Location> locations2 = locationRepository.findAll(
-                LocationSpecification.byNameAndCityNameFulltextSearch("tESt", null)
+                LocationSpecification.byNameAndCityNameFulltextSearch("tESt", null, null, null)
         );
 
         List<Location> locations3 = locationRepository.findAll(
-                LocationSpecification.byNameAndCityNameFulltextSearch(null, "ciTy TesT")
+                LocationSpecification.byNameAndCityNameFulltextSearch(null, "ciTy TesT", null, null)
         );
         List<Location> locations4 = locationRepository.findAll(
-                LocationSpecification.byNameAndCityNameFulltextSearch(null, null)
+                LocationSpecification.byNameAndCityNameFulltextSearch(null, null, null, null)
         );
 
         Assertions.assertEquals(1, locations1.size());

@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ru.tdd.bc.database.specifications.NameSpecification;
 import ru.tdd.geo.TestcontainersConfiguration;
 import ru.tdd.geo.database.entities.City;
 import ru.tdd.geo.database.entities.Country;
@@ -17,7 +18,6 @@ import ru.tdd.geo.database.repositories.CityRepository;
 import ru.tdd.geo.database.repositories.CountryRepository;
 import ru.tdd.geo.database.repositories.RegionRepository;
 import ru.tdd.geo.database.specifications.CitySpecification;
-import ru.tdd.geo.database.specifications.NameSpecification;
 
 import java.util.List;
 import java.util.Optional;

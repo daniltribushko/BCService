@@ -17,9 +17,6 @@ repositories {
 }
 
 dependencies {
-    //mapstruct
-    implementation 'org.mapstruct:mapstruct:1.6.3'
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 
     //database
     implementation project(':database')
@@ -28,4 +25,8 @@ dependencies {
 
     //kafka
     implementation 'org.springframework.kafka:spring-kafka'
+
+    //mapstruct
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 }

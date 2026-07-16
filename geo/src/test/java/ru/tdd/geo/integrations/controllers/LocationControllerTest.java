@@ -1,5 +1,6 @@
 package ru.tdd.geo.integrations.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,7 +15,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.geo.TestcontainersConfiguration;
-import ru.tdd.geo.application.models.dto.DTOMapper;
 import ru.tdd.geo.application.models.dto.geo.location.CreateLocationDTO;
 import ru.tdd.geo.application.models.dto.geo.location.UpdateLocationDTO;
 import ru.tdd.geo.application.utils.URLUtils;
@@ -55,17 +55,21 @@ public class LocationControllerTest {
 
     private final MockMvc mockMvc;
 
+    private final ObjectMapper objectMapper;
+
     @Autowired
     LocationControllerTest(
             LocationRepository locationRepository,
             CityRepository cityRepository,
             CountryRepository countryRepository,
-            MockMvc mockMvc
+            MockMvc mockMvc,
+            ObjectMapper objectMapper
     ) {
         this.locationRepository = locationRepository;
         this.cityRepository = cityRepository;
         this.countryRepository = countryRepository;
         this.mockMvc = mockMvc;
+        this.objectMapper = objectMapper;
     }
 
     @BeforeEach
@@ -91,7 +95,7 @@ public class LocationControllerTest {
                 post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                DTOMapper.toJson(
+                                objectMapper.writeValueAsString(
                                         new CreateLocationDTO(
                                                 "Test Location",
                                                 city.getId()
@@ -117,7 +121,7 @@ public class LocationControllerTest {
                 post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                DTOMapper.toJson(
+                                objectMapper.writeValueAsString(
                                         new CreateLocationDTO(
                                                 "Not Admin",
                                                 UUID.randomUUID()
@@ -137,7 +141,7 @@ public class LocationControllerTest {
                 post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                DTOMapper.toJson(
+                                objectMapper.writeValueAsString(
                                         new CreateLocationDTO(
                                                 "Тест",
                                                 UUID.randomUUID()
@@ -175,7 +179,7 @@ public class LocationControllerTest {
                 post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                DTOMapper.toJson(
+                                objectMapper.writeValueAsString(
                                         new CreateLocationDTO(
                                                 "Test Location",
                                                 city.getId()
@@ -215,7 +219,7 @@ public class LocationControllerTest {
                 put(BASE_URL + "/" + location1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                DTOMapper.toJson(
+                                objectMapper.writeValueAsString(
                                         new UpdateLocationDTO(
                                                 "New Location",
                                                 null
@@ -228,7 +232,7 @@ public class LocationControllerTest {
                 put(BASE_URL + "/" + location2.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                DTOMapper.toJson(
+                                objectMapper.writeValueAsString(
                                         new UpdateLocationDTO(
                                                 "Updated Location",
                                                 city2.getId()
@@ -241,7 +245,7 @@ public class LocationControllerTest {
                 put(BASE_URL + "/" + location1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                DTOMapper.toJson(
+                                objectMapper.writeValueAsString(
                                         new UpdateLocationDTO(
                                                 null,
                                                 city2.getId()
@@ -293,7 +297,7 @@ public class LocationControllerTest {
                 put(BASE_URL + "/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                DTOMapper.toJson(
+                                objectMapper.writeValueAsString(
                                         new UpdateLocationDTO()
                                 )
                         )
@@ -310,7 +314,7 @@ public class LocationControllerTest {
                 put(BASE_URL + "/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                DTOMapper.toJson(
+                                objectMapper.writeValueAsString(
                                         new UpdateLocationDTO()
                                 )
                         )
@@ -345,7 +349,7 @@ public class LocationControllerTest {
                 put(BASE_URL + "/" + location.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                DTOMapper.toJson(
+                                objectMapper.writeValueAsString(
                                         new UpdateLocationDTO(
                                                 null,
                                                 UUID.randomUUID()
@@ -384,7 +388,7 @@ public class LocationControllerTest {
                 put(BASE_URL + "/" + location1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(
-                                DTOMapper.toJson(
+                                objectMapper.writeValueAsString(
                                         new UpdateLocationDTO(
                                                 "Location 2",
                                                 city.getId()

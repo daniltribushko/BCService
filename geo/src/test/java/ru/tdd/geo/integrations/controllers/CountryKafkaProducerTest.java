@@ -18,15 +18,16 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
-import ru.tdd.core.controller.dto.OutboxEventDTO;
-import ru.tdd.core.controller.dto.OutboxEventMapper;
-import ru.tdd.core.database.entities.kafka.OutboxEvent;
-import ru.tdd.core.database.repositories.OutboxEventRepository;
+import ru.tdd.bc.proto.geo.CountryProto;
 import ru.tdd.geo.TestcontainersConfiguration;
 import ru.tdd.geo.application.models.dto.geo.country.CountryDTO;
-import ru.tdd.geo.application.models.enums.event.CountryOutboxEvent;
 import ru.tdd.geo.controller.kafka.OutboxEventSender;
 import ru.tdd.geo.database.entities.Country;
+import ru.tdd.kafka_core.dto.OutboxEventDto;
+import ru.tdd.kafka_core.entities.OutboxEvent;
+import ru.tdd.kafka_core.entities.OutboxEventType;
+import ru.tdd.kafka_core.mappers.OutboxEventMapper;
+import ru.tdd.kafka_core.repository.OutboxEventRepository;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -113,19 +114,17 @@ public class CountryKafkaProducerTest {
     void testProducer() throws JsonProcessingException, InterruptedException {
         setConsumer();
 
-        CountryDTO country = new CountryDTO(
-            UUID.randomUUID(),
-                "Россия"
-        );
+        CountryProto country = CountryProto.newBuilder()
+                .setId(UUID.randomUUID().toString())
+                .setName("Россия")
+                .build();
 
         outboxEventRepository.save(
                 new OutboxEvent(
-                        Country.class.getName(),
-                        CountryOutboxEvent.CREATE.getType(),
-                        objectMapper.writeValueAsString(
-                            country
-                        ),
-                        LocalDateTime.now()
+                        Country.class,
+                        country.toByteArray(),
+                        OutboxEventType.CREATE,
+                       1
                 )
         );
 
@@ -137,9 +136,9 @@ public class CountryKafkaProducerTest {
 
         Assertions.assertTrue(records.iterator().hasNext());
 
-        String message = records.iterator().next().value();;
-        OutboxEventDTO event = objectMapper.readValue(message, OutboxEventDTO.class);
+        String message = records.iterator().next().value();
+        OutboxEventDto event = objectMapper.readValue(message, OutboxEventDto.class);
 
-        Assertions.assertEquals(CountryOutboxEvent.CREATE.getType(), event.getEventType());
+        Assertions.assertEquals(OutboxEventType.CREATE, event.getType());
     }
 }

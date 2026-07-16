@@ -4,17 +4,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import ru.tdd.core.application.utils.TextUtils;
+import ru.tdd.bc.database.specifications.NameSpecification;
+import ru.tdd.bc.http.countries.CountryAlreadyExistsException;
+import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
+import ru.tdd.bc.utils.TextUtils;
 import ru.tdd.geo.application.mappers.CountryMapper;
 import ru.tdd.geo.application.models.dto.geo.country.*;
-import ru.tdd.geo.application.models.enums.event.CountryOutboxEvent;
-import ru.tdd.geo.application.models.exceptions.geo.country.CountryAlreadyExistsException;
-import ru.tdd.geo.application.models.exceptions.geo.country.CountryByIdNotFoundException;
 import ru.tdd.geo.application.services.CountryService;
 import ru.tdd.geo.application.services.imp.kafka.CountryKafkaService;
 import ru.tdd.geo.database.entities.Country;
 import ru.tdd.geo.database.repositories.CountryRepository;
-import ru.tdd.geo.database.specifications.NameSpecification;
+import ru.tdd.kafka_core.entities.OutboxEventType;
 
 import java.util.UUID;
 
@@ -44,11 +44,11 @@ public class CountryServiceImp implements CountryService {
     public CountryDTO create(CreateCountryDTO createDTO) {
         String name = createDTO.getName();
         if (countryRepository.exists(NameSpecification.byNameEqual(name))) {
-            throw new CountryAlreadyExistsException();
+            throw new CountryAlreadyExistsException(name);
         }
         Country country = new Country(name);
         countryRepository.save(country);
-        countryKafkaService.send(CountryOutboxEvent.CREATE, country);
+        countryKafkaService.send(OutboxEventType.CREATE, country);
 
         return countryMapper.toDto(country);
     }
@@ -56,7 +56,7 @@ public class CountryServiceImp implements CountryService {
     @Override
     public CountryDTO update(UUID id, UpdateCountryDTO updateDTO) {
         Country country = countryRepository.findById(id)
-                .orElseThrow(CountryByIdNotFoundException::new);
+                .orElseThrow(() -> new CountryByIdNotFoundException(id));
 
         String newName = updateDTO.getName();
 
@@ -65,11 +65,11 @@ public class CountryServiceImp implements CountryService {
                 country.setName(newName);
 
             } else
-                throw new CountryAlreadyExistsException();
+                throw new CountryAlreadyExistsException(newName);
         }
 
         countryRepository.save(country);
-        countryKafkaService.send(CountryOutboxEvent.UPDATE, country);
+        countryKafkaService.send(OutboxEventType.UPDATE, country);
 
         return countryMapper.toDto(country);
     }
@@ -77,28 +77,32 @@ public class CountryServiceImp implements CountryService {
     @Override
     public void delete(UUID id) {
         Country country = countryRepository.findById(id)
-                .orElseThrow(CountryByIdNotFoundException::new);
+                .orElseThrow(() -> new CountryByIdNotFoundException(id));
 
         countryRepository.delete(country);
-        countryKafkaService.send(CountryOutboxEvent.DELETE, country);
+        countryKafkaService.send(OutboxEventType.DELETE, country);
     }
 
     @Override
     public CountryDetailsDTO getById(UUID id) {
         return countryMapper.toDetailsDto(countryRepository.findById(id)
-                .orElseThrow(CountryByIdNotFoundException::new));
+                .orElseThrow(() -> new CountryByIdNotFoundException(id))
+        );
     }
 
     @Override
-    public CountriesDTO getAll(String name, int page, int perPage) {
-        return new CountriesDTO(
-                countryRepository.findAll(
-                                NameSpecification.byNameWithFullTextSearch(name),
-                                PageRequest.of(page, perPage, Sort.by("name"))
-                        )
-                        .stream()
-                        .map(countryMapper::toDto)
-                        .toList()
+    public CountryListData getAll(String name, int page, int perPage) {
+        var countryPage =  countryRepository.findAll(
+                NameSpecification.byNameWithFullTextSearch(name),
+                PageRequest.of(page, perPage, Sort.by("name"))
         );
+
+        return CountryListData.builder()
+                .data(countryMapper.toDto(countryPage.toList()))
+                .totalPages(countryPage.getTotalPages())
+                .totalCount(countryPage.getTotalElements())
+                .page(countryPage.getSize())
+                .count(countryPage.getNumber())
+                .build();
     }
 }

@@ -4,12 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.tdd.core.controller.redis.kafka.KafkaService;
-import ru.tdd.core.database.entities.kafka.OutboxEvent;
-import ru.tdd.core.database.repositories.OutboxEventRepository;
+import ru.tdd.bc.proto.geo.CountryProto;
 import ru.tdd.geo.application.mappers.CountryMapper;
-import ru.tdd.geo.application.models.enums.event.CountryOutboxEvent;
 import ru.tdd.geo.database.entities.Country;
+import ru.tdd.kafka_core.entities.OutboxEvent;
+import ru.tdd.kafka_core.entities.OutboxEventType;
+import ru.tdd.kafka_core.repository.OutboxEventRepository;
+import ru.tdd.kafka_core.services.KafkaService;
 
 import java.time.LocalDateTime;
 
@@ -19,39 +20,31 @@ import java.time.LocalDateTime;
  * Сервис для отправки стран в кафку
  */
 @Service
-public class CountryKafkaService implements KafkaService<CountryOutboxEvent, Country> {
+public class CountryKafkaService implements KafkaService<Country> {
 
     private final OutboxEventRepository outboxEventRepository;
 
-    private final CountryMapper countryMapper;
-
-    private final ObjectMapper objectMapper;
-
     @Autowired
     public CountryKafkaService(
-            OutboxEventRepository outboxEventRepository,
-            CountryMapper countryMapper,
-            ObjectMapper objectMapper
+            OutboxEventRepository outboxEventRepository
     ) {
         this.outboxEventRepository = outboxEventRepository;
-        this.countryMapper = countryMapper;
-        this.objectMapper = objectMapper;
     }
 
     @Override
-    public void send(CountryOutboxEvent type, Country entity) {
-        try {
-            OutboxEvent event = new OutboxEvent(
-                    Country.class.getName(),
-                    type.getType(),
-                    objectMapper.writeValueAsString(countryMapper.toDto(entity)),
-                    LocalDateTime.now()
-            );
+    public void send(OutboxEventType eventType, Country entity) {
+        CountryProto proto = CountryProto.newBuilder()
+                .setId(entity.getId().toString())
+                .setName(entity.getName())
+                .build();
 
-            outboxEventRepository.save(event);
+        OutboxEvent event = new OutboxEvent(
+                Country.class,
+                proto.toByteArray(),
+                eventType,
+                1
+        );
 
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        outboxEventRepository.save(event);
     }
 }

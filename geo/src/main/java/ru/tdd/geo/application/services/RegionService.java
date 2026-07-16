@@ -39,5 +39,5 @@ public interface RegionService {
     /**
      * Получение списка регионов с фильтрами
      */
-    RegionsDTO getAll(String name, String countryName, int page, int perPage);
+    RegionListData getAll(String name, String countryName, int page, int perPage);
 }

@@ -1,13 +1,11 @@
 package ru.tdd.bc.database.criteria;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import ru.tdd.bc.utils.TextUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -46,6 +44,17 @@ public class CriteriaHelper<T> {
         return this;
     }
 
+    public CriteriaHelper<T> like(Expression<String> field, String text) {
+        if (!TextUtils.isEmpty(text))
+            predicates.add(
+                    cb.like(
+                            cb.lower(field),
+                            "%" + text.toLowerCase() + "%"
+                    )
+            );
+        return this;
+    }
+
     public CriteriaHelper<T> inDateRange(String field, LocalDateTime start, LocalDateTime end) {
         if (start != null && end != null)
             predicates.add(cb.between(root.get(field), start, end));
@@ -59,6 +68,34 @@ public class CriteriaHelper<T> {
 
     public CriteriaHelper<T> or(Predicate[] _predicates) {
         predicates.add(cb.or(_predicates));
+        return this;
+    }
+
+    public CriteriaHelper<T> lowerEqual(
+            String field,
+            String text
+    ) {
+        predicates.add(cb.equal(cb.lower(root.get(field)), text.toLowerCase()));
+        return this;
+    }
+
+    public CriteriaHelper<T> lowerEqual(Expression<String> field, String text) {
+        predicates.add(cb.equal(cb.lower(field), text.toLowerCase()));
+        return this;
+    }
+
+    public CriteriaHelper<T> equal(String field, Object object) {
+        predicates.add(cb.equal(root.get(field), object));
+        return this;
+    }
+
+    public CriteriaHelper<T> equal(Expression<String> field, Object text) {
+        predicates.add(cb.equal(field, text));
+        return this;
+    }
+
+    public CriteriaHelper<T> predicate(Predicate... _predicates) {
+        predicates.addAll(Arrays.stream(_predicates).toList());
         return this;
     }
 

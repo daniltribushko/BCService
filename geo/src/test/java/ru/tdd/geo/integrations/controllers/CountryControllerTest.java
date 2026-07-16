@@ -1,5 +1,6 @@
 package ru.tdd.geo.integrations.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.geo.TestcontainersConfiguration;
-import ru.tdd.geo.application.models.dto.DTOMapper;
 import ru.tdd.geo.application.models.dto.geo.country.CreateCountryDTO;
 import ru.tdd.geo.application.models.dto.geo.country.UpdateCountryDTO;
 import ru.tdd.geo.application.utils.URLUtils;
@@ -51,6 +51,9 @@ class CountryControllerTest {
     @Autowired
     private CountryRepository countryRepository;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @BeforeEach
     void cleanDb() {
         countryRepository.deleteAll();
@@ -64,7 +67,7 @@ class CountryControllerTest {
 
         ResultActions response = mockMvc.perform(post(BASE_URL)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(DTOMapper.toJson(createDto))
+                .content(objectMapper.writeValueAsString(createDto))
         );
 
         response.andExpect(status().isCreated())
@@ -80,7 +83,7 @@ class CountryControllerTest {
 
         ResultActions response = mockMvc.perform(post(BASE_URL)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(DTOMapper.toJson(createDto))
+                .content(objectMapper.writeValueAsString(createDto))
         );
 
         response.andExpect(status().isForbidden());
@@ -97,7 +100,7 @@ class CountryControllerTest {
         ResultActions response = mockMvc.perform(
                 post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(createDto))
+                        .content(objectMapper.writeValueAsString(createDto))
         );
 
         response.andExpect(status().isConflict())
@@ -116,7 +119,7 @@ class CountryControllerTest {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + country.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateCountryDTO("New Country Name")))
+                        .content(objectMapper.writeValueAsString(new UpdateCountryDTO("New Country Name")))
         );
 
         response.andExpect(status().isOk())
@@ -130,7 +133,7 @@ class CountryControllerTest {
     void updateNotAdminFailTest() throws Exception {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
-                        .content(DTOMapper.toJson(new UpdateCountryDTO(null)))
+                        .content(objectMapper.writeValueAsString(new UpdateCountryDTO(null)))
                         .contentType(MediaType.APPLICATION_JSON)
         );
 
@@ -144,7 +147,7 @@ class CountryControllerTest {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateCountryDTO(null)))
+                        .content(objectMapper.writeValueAsString(new UpdateCountryDTO(null)))
         );
 
         response.andExpect(status().isNotFound())
@@ -166,7 +169,7 @@ class CountryControllerTest {
         ResultActions response = mockMvc.perform(
                 put(BASE_URL + "/" + country1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateCountryDTO("Already Exists Country")))
+                        .content(objectMapper.writeValueAsString(new UpdateCountryDTO("Already Exists Country")))
         );
 
         response.andExpect(status().isConflict())
