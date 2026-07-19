@@ -1,5 +1,6 @@
 package ru.tdd.geo.database.specifications;
 
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 import ru.tdd.bc.database.criteria.CriteriaHelper;
 import ru.tdd.geo.database.entities.City;
@@ -40,7 +41,7 @@ public interface CitySpecification {
                 cb.and(
                         new CriteriaHelper<>(root, cr, cb)
                                 .like("name", name)
-                                .like(cb.lower(root.join("region").get("name")), regionName)
+                                .like(cb.lower(root.join("region", JoinType.LEFT).get("name")), regionName)
                                 .like(cb.lower(root.join("country").get("name")), countryName)
                                 .build()
                 );

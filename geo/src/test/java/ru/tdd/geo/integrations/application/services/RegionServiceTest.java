@@ -49,14 +49,11 @@ class RegionServiceTest {
 
     private final RegionRepository regionRepository;
 
-    private final CountryRepository countryRepository;
-
     private final RegionService regionService;
 
     @Autowired
-    RegionServiceTest(RegionRepository regionRepository, CountryRepository countryRepository, RegionService regionService) {
+    RegionServiceTest(RegionRepository regionRepository, RegionService regionService) {
         this.regionRepository = regionRepository;
-        this.countryRepository = countryRepository;
         this.regionService = regionService;
     }
 

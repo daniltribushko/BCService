@@ -5,3 +5,5 @@ spring:
 apache-kafka:
   topics:
     country: bc.country
+jwt:
+  secret: feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac

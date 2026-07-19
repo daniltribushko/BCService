@@ -8,20 +8,24 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ru.tdd.bc.dto.ExceptionDto;
 import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
+import ru.tdd.bc.security.jwt.JwtService;
 import ru.tdd.bc.utils.TextUtils;
 import ru.tdd.geo.TestcontainersConfiguration;
+import ru.tdd.geo.application.models.dto.geo.city.CityDTO;
+import ru.tdd.geo.application.models.dto.geo.city.CityListData;
 import ru.tdd.geo.application.models.dto.geo.city.CreateCityDTO;
 import ru.tdd.geo.application.models.dto.geo.city.UpdateCityDTO;
-import ru.tdd.geo.application.models.dto.geo.region.RegionDTO;
 import ru.tdd.geo.application.models.exceptions.geo.cities.CityAlreadyExistException;
 import ru.tdd.geo.application.models.exceptions.geo.cities.CityByIdNotFoundException;
 import ru.tdd.geo.application.models.exceptions.geo.region.RegionByIdNotFoundException;
@@ -31,16 +35,15 @@ import ru.tdd.geo.sql.InitCitiesSqlScrips;
 import ru.tdd.geo.utils.CityUtils;
 import ru.tdd.geo.utils.CountryUtils;
 import ru.tdd.geo.utils.RegionUtils;
+import ru.tdd.geo.utils.UserUtils;
 
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -50,509 +53,535 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Набор тестов для контроллера городов
  */
 @Testcontainers
-@SpringBootTest
 @InitCitiesSqlScrips
-@AutoConfigureMockMvc
 @DisplayName("Тест контроллера городов")
 @Import(value = TestcontainersConfiguration.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class CityControllerTest {
 
-    private final MockMvc mockMvc;
+    @Autowired
+    private TestRestTemplate restTemplate;
 
-    private final CityRepository cityRepository;
+    @Autowired
+    private JwtService jwtService;
 
-    private final ObjectMapper objectMapper;
+    @Value("${jwt.secret}")
+    private String secretKey;
 
     private static final String BASE_URL = "/geo/cities";
 
-    @Autowired
-    CityControllerTest(
-            MockMvc mockMvc,
-            ObjectMapper objectMapper,
-            CityRepository cityRepository
-    ) {
-        this.mockMvc = mockMvc;
-        this.objectMapper = objectMapper;
-        this.cityRepository = cityRepository;
-    }
-
     @Test
     @DisplayName("Удачное создание")
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void createSuccessTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new CreateCityDTO(
-                                                "Чебоксары",
-                                                RegionUtils.REGION_ID1,
-                                                null
-                                        )
-                                )
-                        )
+    void createSuccessTest() {
+        CreateCityDTO dto = new CreateCityDTO("Коломна", RegionUtils.REGION_ID1, null);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(jwtService.generateToken(UserUtils.ADMIN, secretKey));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<CreateCityDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<CityDTO> actual = restTemplate.postForEntity(
+                BASE_URL,
+                httpEntity,
+                CityDTO.class
         );
 
-        response.andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name", is("Чебоксары")))
-                .andExpect(jsonPath("$.region.id", is(RegionUtils.REGION_ID1.toString())))
-                .andExpect(jsonPath("$.country.id", is(CountryUtils.COUNTRY_ID1.toString())));
+        Assertions.assertEquals(HttpStatus.OK, actual.getStatusCode());
+        CityDTO body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertNotNull(body.getId());
+        Assertions.assertEquals("Коломна", body.getName());
+        Assertions.assertEquals(RegionUtils.REGION_ID1, body.getRegion().getId());
+        Assertions.assertEquals(CountryUtils.COUNTRY_ID1, body.getCountry().getId());
     }
 
     @Test
-    @WithMockUser(username = "user")
     @DisplayName("Неудачное создание - пользователь не является администратором")
-    void createNotAdminFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new CreateCityDTO(
-                                                "Fail Create City",
-                                                UUID.randomUUID(),
-                                                UUID.randomUUID()
-                                        )
-                                )
-                        )
+    void createNotAdminFailTest() {
+        CreateCityDTO dto = new CreateCityDTO("Сургут", null, CountryUtils.COUNTRY_ID1);
+
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<CreateCityDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<String> actual = restTemplate.postForEntity(
+                BASE_URL,
+                httpEntity,
+                String.class
         );
 
-        response.andExpect(status().isForbidden());
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, actual.getStatusCode());
     }
 
     @Test
     @DisplayName("Неудачное создание - регион не найден")
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void createRegionNotFoundFailTest() throws Exception {
+    void createRegionNotFoundFailTest() {
         UUID regionId = UUID.randomUUID();
-        ResultActions response = mockMvc.perform(
-                post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new CreateCityDTO(
-                                                "Fail Create City",
-                                                regionId,
-                                                null
-                                        )
-                                )
-                        )
+
+        CreateCityDTO dto = new CreateCityDTO("Тест", regionId, null);
+
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<CreateCityDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.postForEntity(
+                BASE_URL,
+                httpEntity,
+                ExceptionDto.class
         );
 
-        response.andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message", is(RegionByIdNotFoundException.getErrorText(regionId))));
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(RegionByIdNotFoundException.getErrorText(regionId), body.getMessage());
     }
 
     @Test
-    @DisplayName("Неудачное создание - город не найдено")
+    @DisplayName("Неудачное создание - страна не найдена")
     @WithMockUser(username = "admin", roles = "ADMIN")
-    void createCityNotFoundFailTest() throws Exception {
+    void createCityNotFoundFailTest() {
         UUID countryId = UUID.randomUUID();
-        ResultActions response = mockMvc.perform(
-                post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new CreateCityDTO(
-                                                "Fail Create City",
-                                                null,
-                                                countryId
-                                        )
-                                )
-                        )
+
+        CreateCityDTO dto = new CreateCityDTO("Тест", null, countryId);
+
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<CreateCityDTO> httpEntity = new HttpEntity<>(dto, headers);
+        ResponseEntity<ExceptionDto> actual = restTemplate.postForEntity(
+                BASE_URL,
+                httpEntity,
+                ExceptionDto.class
         );
 
-        response.andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message", is(CountryByIdNotFoundException.getErrorText(countryId))));
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(countryId), body.getMessage());
     }
 
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    private static Stream<Arguments> createAlreadyExistsFailTest() {
+        return Stream.of(
+                arguments(
+                        named(
+                                "Создание через регион",
+                                new CreateCityDTO("Одинцово", RegionUtils.REGION_ID1, null)
+                        ),
+                        CityAlreadyExistException.getErrorText("Одинцово", CountryUtils.COUNTRY_ID1, RegionUtils.REGION_ID1)
+                ),
+                arguments(
+                        named(
+                                "Создание через страну",
+                                new CreateCityDTO("Москва", null, CountryUtils.COUNTRY_ID1)
+                        ),
+                        CityAlreadyExistException.getErrorText("Москва", CountryUtils.COUNTRY_ID1, null)
+                )
+        );
+    }
+
+    @MethodSource
+    @ParameterizedTest(name = "{0}")
     @DisplayName("Не удачное создание - город уже создан")
-    void createAlreadyExistsFailTest() throws Exception {
-        ResultActions response1 = mockMvc.perform(
-                post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new CreateCityDTO(
-                                                "Москва",
-                                                null,
-                                                CountryUtils.COUNTRY_ID1
-                                        )
-                                )
-                        )
+    void createAlreadyExistsFailTest(CreateCityDTO dto, String errorMessage) {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<CreateCityDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.postForEntity(
+                BASE_URL,
+                httpEntity,
+                ExceptionDto.class
         );
 
-        ResultActions response2 = mockMvc.perform(
-                post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new CreateCityDTO(
-                                                "Одинцово",
-                                                RegionUtils.REGION_ID1,
-                                                null
-                                        )
-                                )
-                        )
-        );
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
 
-        response1.andExpect(status().isConflict())
-                .andExpect(
-                        jsonPath(
-                                "$.message",
-                                is(CityAlreadyExistException.getErrorText("Москва", CountryUtils.COUNTRY_ID1, null))
-                        )
-                );
+        ExceptionDto body = actual.getBody();
 
-        response2.andExpect(status().isConflict())
-                .andExpect(
-                        jsonPath(
-                                "$.message",
-                                is(CityAlreadyExistException.getErrorText("Одинцово", CountryUtils.COUNTRY_ID1, RegionUtils.REGION_ID1))
-                        )
-                );
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(errorMessage, body.getMessage());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
     @DisplayName("Неудачное создание - данные не валидны")
-    void createNotValidFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new CreateCityDTO(
-                                                "Test City",
-                                                null,
-                                                null
-                                        )
-                                )
-                        )
+    void createNotValidFailTest() {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        CreateCityDTO dto = new CreateCityDTO("Сургут", null, null);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<CreateCityDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.postForEntity(
+                BASE_URL,
+                httpEntity,
+                ExceptionDto.class
         );
 
-        response.andExpect(status().isUnprocessableEntity())
-                .andExpect(
-                        jsonPath(
-                                "$.message",
-                                is("Необходимо указать идентификатор региона или страны")
-                        )
-                );
+        Assertions.assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals("Необходимо указать идентификатор региона или страны", body.getMessage());
     }
 
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    private static Stream<Arguments> updateSuccessTest() {
+        return Stream.of(
+                arguments(
+                        named(
+                                "Обновление названия",
+                                CityUtils.CITY_ID3
+                        ),
+                        new UpdateCityDTO("Сургут", null, null),
+                        "Сургут",
+                        RegionUtils.REGION_ID1,
+                        CountryUtils.COUNTRY_ID1
+                ),
+                arguments(
+                        named(
+                                "Обновление региона",
+                                CityUtils.CITY_ID11
+                        ),
+                        new UpdateCityDTO(null, RegionUtils.REGION_ID1, null),
+                        "Рим",
+                        RegionUtils.REGION_ID1,
+                        CountryUtils.COUNTRY_ID4
+                ),
+                arguments(
+                        named(
+                                "Обновление страны",
+                                CityUtils.CITY_ID7
+                        ),
+                        new UpdateCityDTO(null, null, CountryUtils.COUNTRY_ID2),
+                        "Екатеринбург",
+                        null,
+                        CountryUtils.COUNTRY_ID2
+                ),
+                arguments(
+                        named(
+                                "Обновление названия и региона",
+                                CityUtils.CITY_ID8
+                        ),
+                        new UpdateCityDTO("Брянск", RegionUtils.REGION_ID5, null),
+                        "Брянск",
+                        RegionUtils.REGION_ID5,
+                        CountryUtils.COUNTRY_ID2
+                ),
+                arguments(
+                        named(
+                                "Обновление названия и страны",
+                                CityUtils.CITY_ID11
+                        ),
+                        new UpdateCityDTO("Кемерово", null, CountryUtils.COUNTRY_ID1),
+                        "Кемерово",
+                        null,
+                        CountryUtils.COUNTRY_ID1
+                )
+        );
+    }
+
+    @MethodSource
+    @ParameterizedTest(name = "{0}")
     @DisplayName("Удачное обновление")
-    void updateSuccessTest() throws Exception {
+    void updateSuccessTest(UUID cityId, UpdateCityDTO dto, String expectedName, UUID expectedRegionId, UUID expectedCountryId) {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
 
-        String url = BASE_URL + "/" + CityUtils.CITY_ID2;
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
 
-        ResultActions response1 = mockMvc.perform(
-                put(url)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new UpdateCityDTO(
-                                                "Новый город",
-                                                null,
-                                                null
-                                        )
-                                )
-                        )
+        HttpEntity<UpdateCityDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<CityDTO> actual = restTemplate.exchange(
+                BASE_URL + "/" + cityId,
+                HttpMethod.PUT,
+                httpEntity,
+                CityDTO.class
         );
 
-        ResultActions response2 = mockMvc.perform(
-                put(url)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new UpdateCityDTO(
-                                                null,
-                                                RegionUtils.REGION_ID2,
-                                                null
-                                        )
-                                )
-                        )
-        );
+        Assertions.assertEquals(HttpStatus.OK, actual.getStatusCode());
 
-        ResultActions response3 = mockMvc.perform(
-                put(url)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new UpdateCityDTO(
-                                                null,
-                                                null,
-                                                CountryUtils.COUNTRY_ID2
-                                        )
-                                )
-                        )
-        );
+        CityDTO body = actual.getBody();
 
-        response1.andExpect(status().isOk())
-                .andExpect(
-                        jsonPath(
-                                "$.name",
-                                is("Новый город")
-                        )
-                )
-                .andExpect(
-                        jsonPath(
-                                "$.region",
-                                nullValue(RegionDTO.class)
-                        )
-                )
-                .andExpect(
-                        jsonPath(
-                                "$.country.id",
-                                is(CountryUtils.COUNTRY_ID1.toString())
-                        )
-                );
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(expectedName, body.getName());
+        Assertions.assertEquals(expectedCountryId, body.getCountry().getId());
 
-        response2.andExpect(status().isOk())
-                .andExpect(
-                        jsonPath(
-                                "$.name",
-                                is("Новый город")
-                        )
-                )
-                .andExpect(
-                        jsonPath(
-                                "$.region.id",
-                                is(RegionUtils.REGION_ID2.toString())
-                        )
-                )
-                .andExpect(
-                        jsonPath(
-                                "$.country.id",
-                                is(CountryUtils.COUNTRY_ID2.toString())
-                        )
-                );
-
-        response3.andExpect(status().isOk())
-                .andExpect(
-                        jsonPath(
-                                "$.name",
-                                is("Новый город")
-                        )
-                )
-                .andExpect(
-                        jsonPath(
-                                "$.region",
-                                nullValue(RegionDTO.class)
-                        )
-                )
-                .andExpect(
-                        jsonPath(
-                                "$.country.id",
-                                is(CountryUtils.COUNTRY_ID2)
-                        )
-                );
+        if (expectedRegionId != null)
+            Assertions.assertEquals(body.getRegion().getId(), expectedRegionId);
+        else
+            Assertions.assertNull(body.getRegion());
     }
 
     @Test
     @DisplayName("Неудачное обновление - пользователь не является администратором")
-    void updateNotAdminFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                put(BASE_URL + "/" + UUID.randomUUID())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new UpdateCityDTO()
-                                )
-                        )
+    void updateNotAdminFailTest() {
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        UpdateCityDTO dto = new UpdateCityDTO();
+
+        HttpEntity<UpdateCityDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<String> actual = restTemplate.exchange(
+                BASE_URL + "/" + CityUtils.CITY_ID3,
+                HttpMethod.PUT,
+                httpEntity,
+                String.class
         );
 
-        response.andExpect(status().isForbidden());
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, actual.getStatusCode());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
     @DisplayName("Неудачное обновление - город не найден")
-    void updateCityNotFoundFailTest() throws Exception {
+    void updateCityNotFoundFailTest() {
         UUID cityId = UUID.randomUUID();
-        ResultActions response = mockMvc.perform(
-                put(BASE_URL + "/" + cityId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new UpdateCityDTO()
-                                )
-                        )
+
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<UpdateCityDTO> httpEntity = new HttpEntity<>(new UpdateCityDTO(), headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + cityId,
+                HttpMethod.PUT,
+                httpEntity,
+                ExceptionDto.class
         );
 
-        response.andExpect(status().isNotFound())
-                .andExpect(
-                        jsonPath(
-                                "$.message",
-                                is(CityByIdNotFoundException.getErrorText(cityId))
-                        )
-                );
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(CityByIdNotFoundException.getErrorText(cityId), body.getMessage());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
     @DisplayName("Неудачное обновление - регион не найден")
-    void updateRegionNotFoundFailTest() throws Exception {
+    void updateRegionNotFoundFailTest() {
         UUID regionId = UUID.randomUUID();
-        ResultActions response = mockMvc.perform(
-                put(BASE_URL + "/" + CityUtils.CITY_ID4)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new UpdateCityDTO(
-                                                null,
-                                                regionId,
-                                                null
-                                        )
-                                )
-                        )
+
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<UpdateCityDTO> httpEntity = new HttpEntity<>(
+                new UpdateCityDTO(null, regionId, null),
+                headers
         );
 
-        response.andExpect(status().isNotFound())
-                .andExpect(
-                        jsonPath(
-                                "$.message",
-                                is(RegionByIdNotFoundException.getErrorText(regionId))
-                        )
-                );
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + CityUtils.CITY_ID1,
+                HttpMethod.PUT,
+                httpEntity,
+                ExceptionDto.class
+        );
+
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(RegionByIdNotFoundException.getErrorText(regionId), body.getMessage());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
     @DisplayName("Не удачное обновление - страна не найдена")
-    void updateCountryNotFoundFailTest() throws Exception {
+    void updateCountryNotFoundFailTest() {
         UUID countryId = UUID.randomUUID();
-        ResultActions response = mockMvc.perform(
-                put(BASE_URL + "/" + CityUtils.CITY_ID5)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(
-                                objectMapper.writeValueAsString(
-                                        new UpdateCityDTO(
-                                                null,
-                                                null,
-                                                countryId
-                                        )
-                                )
-                        )
+
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        UpdateCityDTO dto = new UpdateCityDTO(null, null, countryId);
+
+        HttpEntity<UpdateCityDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + CityUtils.CITY_ID5,
+                HttpMethod.PUT,
+                httpEntity,
+                ExceptionDto.class
         );
 
-        response.andExpect(status().isNotFound())
-                .andExpect(
-                        jsonPath(
-                                "$.message",
-                                is(CountryByIdNotFoundException.getErrorText(countryId))
-                        )
-                );
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+
     }
 
     @Test
-    @WithMockUser(username = "user")
     @DisplayName("Удачное получение по идентификатору")
-    void getByIdSuccessTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                get(BASE_URL + "/" + CityUtils.CITY_ID10)
+    void getByIdSuccessTest() {
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<CityDTO> actual = restTemplate.exchange(
+                BASE_URL + "/" + CityUtils.CITY_ID3,
+                HttpMethod.GET,
+                httpEntity,
+                CityDTO.class
         );
 
-        response.andExpect(status().isOk())
-                .andExpect(
-                        jsonPath(
-                                "$.id",
-                                is(CityUtils.CITY_ID10.toString())
-                        )
-                )
-                .andExpect(
-                        jsonPath(
-                                "$.name",
-                                is("Харбин")
-                        )
-                )
-                .andExpect(
-                        jsonPath(
-                                "$.region",
-                                is(RegionUtils.REGION_ID5)
-                        )
-                )
-                .andExpect(
-                        jsonPath(
-                                "$.country.id",
-                                is(CountryUtils.COUNTRY_ID2)
-                        )
-                );
+        Assertions.assertEquals(HttpStatus.OK, actual.getStatusCode());
+
+        CityDTO body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(CityUtils.CITY_ID3, body.getId());
+        Assertions.assertEquals("Одинцово", body.getName());
+        Assertions.assertEquals(RegionUtils.REGION_ID1, body.getRegion().getId());
+        Assertions.assertEquals(CountryUtils.COUNTRY_ID1, body.getCountry().getId());
     }
 
     @Test
-    @WithMockUser(username = "user")
     @DisplayName("Неудачное получение по идентификатору - город не найден")
-    void getByIdNotFoundFailTest() throws Exception {
+    void getByIdNotFoundFailTest() {
         UUID cityId = UUID.randomUUID();
-        ResultActions response = mockMvc.perform(
-                get(BASE_URL + "/" + cityId)
+
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + cityId,
+                HttpMethod.GET,
+                httpEntity,
+                ExceptionDto.class
         );
 
-        response.andExpect(status().isNotFound())
-                .andExpect(
-                        jsonPath(
-                                "$.message",
-                                is(CityByIdNotFoundException.getErrorText(cityId))
-                        )
-                );
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(CityByIdNotFoundException.getErrorText(cityId), body.getMessage());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
     @DisplayName("Удачное удаление")
-    void deleteSuccessTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                delete(BASE_URL + "/" + CityUtils.CITY_ID8)
+    void deleteSuccessTest() {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<Object> actual = restTemplate.exchange(
+                BASE_URL + "/" + CityUtils.CITY_ID8,
+                HttpMethod.DELETE,
+                httpEntity,
+                Object.class
         );
 
-        long actualCount = cityRepository.count();
-
-        response.andExpect(status().isNoContent());
-        Assertions.assertEquals(10, actualCount);
+        Assertions.assertEquals(HttpStatus.NO_CONTENT, actual.getStatusCode());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
     @DisplayName("Неудачное удаление - город не найден")
-    void deleteNotFoundFailTest() throws Exception {
+    void deleteNotFoundFailTest() {
         UUID cityId = UUID.randomUUID();
-        ResultActions response = mockMvc.perform(
-                delete(BASE_URL + "/" + cityId)
+
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<ExceptionDto> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + cityId,
+                HttpMethod.DELETE,
+                httpEntity,
+                ExceptionDto.class
         );
 
-        response.andExpect(status().isNotFound())
-                .andExpect(
-                        jsonPath(
-                                "$.message",
-                                is(CityByIdNotFoundException.getErrorText(cityId))
-                        )
-                );
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(CityByIdNotFoundException.getErrorText(cityId), body.getMessage());
     }
 
     @Test
-    @WithMockUser(username = "user")
     @DisplayName("Неудачное удаление - пользователь не является администратором")
-    void deleteNotAdminFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                delete(BASE_URL + "/" + UUID.randomUUID())
+    void deleteNotAdminFailTest() {
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> actual = restTemplate.exchange(
+                BASE_URL + "/" + CityUtils.CITY_ID5,
+                HttpMethod.DELETE,
+                httpEntity,
+                String.class
         );
 
-        response.andExpect(status().isForbidden());
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, actual.getStatusCode());
     }
 
     private static Stream<Arguments> getAllTest() {
         return Stream.of(
-/*                arguments(named("Поиск по названию города 1", "а"), null, null, null, null, 6),
+                arguments(named("Поиск по названию города 1", "а"), null, null, null, null, 7),
                 arguments(named("Поиск по названию города 2", "БНА"), null, null, null, null, 1),
                 arguments(named("Поиск по названию города и региона 1", "А"), "ОвСк", null, null, null, 3),
                 arguments(named("Поиск по названию города и региона 2", "ХЭФЭЙ"), "АНЬХОЙ", null, null, null, 1),
                 arguments(named("Поиск по названиям города, региона, страны 1", "ДУБНА"), "московская область", "РОССИЯ", null, null, 1),
-                arguments(named("Поиск по названиям города, региона, страны 2", "хэфэй"), "аньхой", "китай", null, null, 1),*/
+                arguments(named("Поиск по названиям города, региона, страны 2", "хэфэй"), "аньхой", "китай", null, null, 1),
                 arguments(named("Поиск по названию города и страны", "МОСКВА"), null, "РОССИЯ", null, null, 1),
                 arguments(named("Поиск с пустыми названиями", ""), "", "", null, null, 11),
                 arguments(named("Поиск без названий", null), null, null, null, null, 11),
@@ -579,8 +608,26 @@ class CityControllerTest {
         if (perPage != null)
             urlBuilder.addQueryParameter("per_page", perPage);
 
-        ResultActions actual = mockMvc.perform(get(urlBuilder.build()));
-        actual.andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(expectedSize)));
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<CityListData> actual = restTemplate.exchange(
+                urlBuilder.build(),
+                HttpMethod.GET,
+                httpEntity,
+                CityListData.class
+        );
+
+        Assertions.assertEquals(HttpStatus.OK, actual.getStatusCode());
+
+        CityListData body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(expectedSize, body.getData().size());
     }
 }

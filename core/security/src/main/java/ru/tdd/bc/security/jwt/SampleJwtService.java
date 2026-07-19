@@ -2,6 +2,7 @@ package ru.tdd.bc.security.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import ru.tdd.bc.security.dto.Role;
 import ru.tdd.bc.security.dto.UserDto;
@@ -48,7 +49,7 @@ public class SampleJwtService implements JwtService {
 
     @Override
     public SecretKey getSecret(String secretKey) {
-        return Keys.hmacShaKeyFor(Base64.getDecoder().decode(secretKey));
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
     }
 
     @Override

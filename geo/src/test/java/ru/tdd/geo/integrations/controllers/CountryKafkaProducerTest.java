@@ -65,7 +65,6 @@ public class CountryKafkaProducerTest {
             OutboxEventRepository outboxEventRepository,
             OutboxEventSender outboxEventSender,
             ObjectMapper objectMapper,
-            OutboxEventMapper outboxEventMapper,
             KafkaContainer kafkaContainer
     ) {
         this.outboxEventRepository = outboxEventRepository;
