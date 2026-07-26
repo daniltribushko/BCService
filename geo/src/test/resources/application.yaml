@@ -6,4 +6,4 @@ apache-kafka:
   topics:
     country: bc.country
 jwt:
-  secret: feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac
+  secret: "feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac"

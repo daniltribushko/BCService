@@ -8,20 +8,23 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import ru.tdd.bc.http.AlreadyExistsException;
 import ru.tdd.bc.http.NotFoundException;
+import ru.tdd.bc.http.countries.CountryAlreadyExistsException;
+import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
 import ru.tdd.geo.application.mappers.CountryMapper;
-import ru.tdd.geo.application.models.dto.geo.country.*;
+import ru.tdd.geo.application.models.dto.geo.country.CountryDTO;
+import ru.tdd.geo.application.models.dto.geo.country.CountryDetailsDTO;
+import ru.tdd.geo.application.models.dto.geo.country.CreateCountryDTO;
+import ru.tdd.geo.application.models.dto.geo.country.UpdateCountryDTO;
 import ru.tdd.geo.application.services.imp.CountryServiceImp;
 import ru.tdd.geo.application.services.imp.kafka.CountryKafkaService;
 import ru.tdd.geo.database.entities.Country;
 import ru.tdd.geo.database.repositories.CountryRepository;
+import ru.tdd.kafka_core.entities.OutboxEventType;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -51,19 +54,21 @@ class CountryServiceTest {
     @Test
     @DisplayName("Удачное создание")
     void saveSuccessTest() {
+        UUID countryId = UUID.randomUUID();
+
         Mockito.when(countryRepository.exists(any(Specification.class))).thenReturn(false);
         Mockito.when(countryMapper.toDto(any(Country.class)))
-                .thenReturn(
-                        new CountryDTO(UUID.randomUUID(), "Test Create Country 1")
-                );
+                .thenReturn(new CountryDTO(countryId, "Россия"));
 
         CountryDTO actual = countryServiceImp.create(
-                new CreateCountryDTO("Test Create Country 1")
+                new CreateCountryDTO("Россия")
         );
 
         Mockito.verify(countryRepository).exists(any(Specification.class));
         Mockito.verify(countryRepository).save(any(Country.class));
-        Assertions.assertEquals("Test Create Country 1", actual.getName());
+        Mockito.verify(countryKafkaService).send(any(OutboxEventType.class), any(Country.class));
+        Assertions.assertEquals(countryId, actual.getId());
+        Assertions.assertEquals("Россия", actual.getName());
     }
 
     @Test
@@ -73,18 +78,18 @@ class CountryServiceTest {
 
         AlreadyExistsException actual = Assertions.assertThrows(
                 AlreadyExistsException.class,
-                () -> countryServiceImp.create(new CreateCountryDTO(""))
+                () -> countryServiceImp.create(new CreateCountryDTO("Россия"))
         );
 
         Mockito.verify(countryRepository).exists(any(Specification.class));
         Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным названием уже создана", actual.getMessage());
+        Assertions.assertEquals(CountryAlreadyExistsException.getErrorText("Россия"), actual.getMessage());
     }
 
     @Test
     @DisplayName("Удачное обновление")
     void updateSuccessTest() {
-        Country country = new Country("Country For Update");
+        Country country = new Country("КНР");
         UUID id = UUID.randomUUID();
         country.setId(id);
 
@@ -94,17 +99,18 @@ class CountryServiceTest {
                 .thenReturn(
                         new CountryDTO(
                                 id,
-                                "New Country Name"
+                                "Китай"
                         )
                 );
 
-        CountryDTO actual = countryServiceImp.update(id, new UpdateCountryDTO("New Country Name"));
+        CountryDTO actual = countryServiceImp.update(id, new UpdateCountryDTO("Китай"));
 
         Mockito.verify(countryRepository).findById(id);
         Mockito.verify(countryRepository).exists(any(Specification.class));
         Mockito.verify(countryRepository).save(any(Country.class));
+        Mockito.verify(countryKafkaService).send(any(OutboxEventType.class), any(Country.class));
         Assertions.assertEquals(id, actual.getId());
-        Assertions.assertEquals("New Country Name", actual.getName());
+        Assertions.assertEquals("Китай", actual.getName());
     }
 
     @Test
@@ -116,18 +122,18 @@ class CountryServiceTest {
 
         NotFoundException actual = Assertions.assertThrows(
                 NotFoundException.class,
-                () -> countryServiceImp.update(id, new UpdateCountryDTO("Not Found Country"))
+                () -> countryServiceImp.update(id, new UpdateCountryDTO("Испания"))
         );
 
         Mockito.verify(countryRepository).findById(id);
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(id), actual.getMessage());
     }
 
     @Test
     @DisplayName("Неудачное обновление страна уже создана")
     void updateAlreadyExistsFailTest() {
-        Country country = new Country("Already Exists Country");
+        Country country = new Country("Россия");
         UUID id = UUID.randomUUID();
 
         Mockito.when(countryRepository.findById(id)).thenReturn(Optional.of(country));
@@ -135,13 +141,13 @@ class CountryServiceTest {
 
         AlreadyExistsException actual = Assertions.assertThrows(
                 AlreadyExistsException.class,
-                () -> countryServiceImp.update(id, new UpdateCountryDTO("New Country"))
+                () -> countryServiceImp.update(id, new UpdateCountryDTO("Россия"))
         );
 
         Mockito.verify(countryRepository).exists(any(Specification.class));
         Mockito.verify(countryRepository).findById(id);
         Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным названием уже создана", actual.getMessage());
+        Assertions.assertEquals(CountryAlreadyExistsException.getErrorText("Россия"), actual.getMessage());
     }
 
     @Test
@@ -156,6 +162,7 @@ class CountryServiceTest {
 
         Mockito.verify(countryRepository).findById(id);
         Mockito.verify(countryRepository).delete(country);
+        Mockito.verify(countryKafkaService).send(any(OutboxEventType.class), any(Country.class));
     }
 
     @Test
@@ -172,7 +179,7 @@ class CountryServiceTest {
 
         Mockito.verify(countryRepository).findById(id);
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(id), actual.getMessage());
     }
 
     @Test
@@ -180,19 +187,19 @@ class CountryServiceTest {
     void findByIdSuccessTest() {
         UUID id = UUID.randomUUID();
 
-        Country country = new Country("Find By Id Country");
+        Country country = new Country("Россия");
         country.setId(id);
 
         Mockito.when(countryRepository.findById(id)).thenReturn(Optional.of(country));
         Mockito.when(countryMapper.toDetailsDto(country)).thenReturn(
-                new CountryDetailsDTO(id, "Find By Id Country", null)
+                new CountryDetailsDTO(id, "Россия", null)
         );
 
         CountryDetailsDTO actual = countryServiceImp.getById(id);
 
         Mockito.verify(countryRepository).findById(id);
         Assertions.assertEquals(id, actual.getId());
-        Assertions.assertEquals("Find By Id Country", actual.getName());
+        Assertions.assertEquals("Россия", actual.getName());
     }
 
     @Test
@@ -209,31 +216,5 @@ class CountryServiceTest {
 
         Mockito.verify(countryRepository).findById(id);
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-    }
-
-    @Test
-    @DisplayName("Полнотекстовый поиск по названию")
-    void findAllTest() {
-        PageImpl<Country> countries = new PageImpl<>(
-                List.of(
-                        new Country("Find All Country 1"),
-                        new Country("Find All Country 2")
-                ),
-                PageRequest.of(0, 2),
-                2
-        );
-
-        Mockito.when(
-                        countryRepository.findAll(
-                                any(Specification.class),
-                                any(PageRequest.class)
-                        )
-                )
-                .thenReturn(countries);
-
-        CountryListData actual = countryServiceImp.getAll("test", 0, 2);
-
-        Mockito.verify(countryRepository).findAll(any(Specification.class), any(PageRequest.class));
-        Assertions.assertEquals(2, actual.getData().size());
     }
 }

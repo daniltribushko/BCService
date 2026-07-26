@@ -108,7 +108,7 @@ class CountryControllerTest {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
 
-        HttpEntity<CreateCountryDTO> httpEntity = new HttpEntity<>(new CreateCountryDTO(), headers);
+        HttpEntity<CreateCountryDTO> httpEntity = new HttpEntity<>(new CreateCountryDTO("Test"), headers);
 
         ResponseEntity<String> actual = restTemplate.exchange(
                 BASE_URL,

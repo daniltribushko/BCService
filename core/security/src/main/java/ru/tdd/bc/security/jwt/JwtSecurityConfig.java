@@ -13,7 +13,7 @@ import ru.tdd.bc.security.filters.SampleJwtFilter;
 @Configuration
 public class JwtSecurityConfig {
 
-    @Value("jwt.secret")
+    @Value("${jwt.secret}")
     private String secretKey;
 
     @Bean

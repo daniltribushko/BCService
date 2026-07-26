@@ -46,27 +46,21 @@ public class CountryRepositoryTest {
     @Test
     @DisplayName("Удачное сохранение")
     void saveTest() {
-        long expectedCount = countryRepository.count() + 1;
-        countryRepository.save(
-                new Country("Save Test Country")
-        );
+        countryRepository.save(new Country("Сербия"));
         long actualCount = countryRepository.count();
 
-        Assertions.assertEquals(expectedCount, actualCount);
+        Assertions.assertEquals(5, actualCount);
     }
 
     @Test
     @DisplayName("Удачное удаление")
     void deleteTest() {
-        Country country = new Country("Delete Test Country");
-        countryRepository.save(
-                country
-        );
-        long expectedCount = countryRepository.count() - 1;
+        Country country = countryRepository.getReferenceById(CountryUtils.COUNTRY_ID3);
+
         countryRepository.delete(country);
         long actualCount = countryRepository.count();
 
-        Assertions.assertEquals(expectedCount, actualCount);
+        Assertions.assertEquals(3, actualCount);
     }
 
     @Test
@@ -91,19 +85,14 @@ public class CountryRepositoryTest {
     @Test
     @DisplayName("Удачное обновление")
     void updateTest() {
-        Optional<Country> countryOpt = countryRepository.findById(CountryUtils.COUNTRY_ID3);
-
-        Assertions.assertTrue(countryOpt.isPresent());
-
-        Country country = countryOpt.get();
-
-        country.setName("New name");
+        Country country = countryRepository.getReferenceById(CountryUtils.COUNTRY_ID1);
+        country.setName("СССР");
         countryRepository.save(country);
 
-        Optional<Country> updatedCountry = countryRepository.findById(CountryUtils.COUNTRY_ID3);
+        Optional<Country> updatedCountry = countryRepository.findById(CountryUtils.COUNTRY_ID1);
 
         Assertions.assertTrue(updatedCountry.isPresent());
-        Assertions.assertEquals("New name", updatedCountry.get().getName());
+        Assertions.assertEquals("СССР", updatedCountry.get().getName());
     }
 
     @Test

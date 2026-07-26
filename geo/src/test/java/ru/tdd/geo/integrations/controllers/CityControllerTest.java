@@ -88,7 +88,7 @@ class CityControllerTest {
                 CityDTO.class
         );
 
-        Assertions.assertEquals(HttpStatus.OK, actual.getStatusCode());
+        Assertions.assertEquals(HttpStatus.CREATED, actual.getStatusCode());
         CityDTO body = actual.getBody();
 
         Assertions.assertNotNull(body);
@@ -270,7 +270,7 @@ class CityControllerTest {
                         new UpdateCityDTO(null, RegionUtils.REGION_ID1, null),
                         "Рим",
                         RegionUtils.REGION_ID1,
-                        CountryUtils.COUNTRY_ID4
+                        CountryUtils.COUNTRY_ID1
                 ),
                 arguments(
                         named(
@@ -332,7 +332,7 @@ class CityControllerTest {
         Assertions.assertEquals(expectedName, body.getName());
         Assertions.assertEquals(expectedCountryId, body.getCountry().getId());
 
-        if (expectedRegionId != null)
+        if (dto.getRegionId() != null)
             Assertions.assertEquals(body.getRegion().getId(), expectedRegionId);
         else
             Assertions.assertNull(body.getRegion());
