@@ -2,20 +2,30 @@ package ru.tdd.geo.integrations.database.repositories;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ru.tdd.bc.database.specifications.NameSpecification;
 import ru.tdd.geo.TestcontainersConfiguration;
 import ru.tdd.geo.database.entities.Country;
 import ru.tdd.geo.database.repositories.CountryRepository;
-import ru.tdd.geo.database.specifications.NameSpecification;
+import ru.tdd.geo.sql.InitCountriesSqlScripts;
+import ru.tdd.geo.utils.CountryUtils;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 /**
  * @author Tribusko Danil
@@ -24,57 +34,40 @@ import java.util.UUID;
  */
 @DataJpaTest
 @Testcontainers
-@ImportTestcontainers(TestcontainersConfiguration.class)
+@InitCountriesSqlScripts
+@Import(TestcontainersConfiguration.class)
+@DisplayName("Интеграционный тест репозитория стран")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class CountryRepositoryTest {
 
     @Autowired
     private CountryRepository countryRepository;
 
-    @BeforeEach
-    void cleanBd() {
-        countryRepository.deleteAll();
-    }
-
     @Test
+    @DisplayName("Удачное сохранение")
     void saveTest() {
-        long expectedCount = countryRepository.count() + 1;
-        countryRepository.save(
-                new Country("Save Test Country")
-        );
+        countryRepository.save(new Country("Сербия"));
         long actualCount = countryRepository.count();
 
-        Assertions.assertEquals(expectedCount, actualCount);
+        Assertions.assertEquals(5, actualCount);
     }
 
     @Test
+    @DisplayName("Удачное удаление")
     void deleteTest() {
-        Country country = new Country("Delete Test Country");
-        countryRepository.save(
-                country
-        );
-        long expectedCount = countryRepository.count() - 1;
+        Country country = countryRepository.getReferenceById(CountryUtils.COUNTRY_ID3);
+
         countryRepository.delete(country);
         long actualCount = countryRepository.count();
 
-        Assertions.assertEquals(expectedCount, actualCount);
+        Assertions.assertEquals(3, actualCount);
     }
 
     @Test
+    @DisplayName("Удачное получение по идентификатору")
     void findByIdTest() {
-        Country country1 = new Country("Test Country Find By Id 1");
-        Country country2 = new Country("Test Country Find By Id 2");
-
-        countryRepository.save(
-                country1
-        );
-
-        countryRepository.save(
-                country2
-        );
-
-        Optional<Country> foundCountry1 = countryRepository.findById(country1.getId());
-        Optional<Country> foundCountry2 = countryRepository.findById(country2.getId());
+        Optional<Country> foundCountry1 = countryRepository.findById(CountryUtils.COUNTRY_ID1);
+        Optional<Country> foundCountry2 = countryRepository.findById(CountryUtils.COUNTRY_ID2);
 
         Optional<Country> notFoundCountry1 = countryRepository.findById(UUID.randomUUID());
         Optional<Country> notFoundCountry2 = countryRepository.findById(UUID.randomUUID());
@@ -82,74 +75,68 @@ public class CountryRepositoryTest {
         Assertions.assertTrue(foundCountry1.isPresent());
         Assertions.assertTrue(foundCountry2.isPresent());
 
-        Assertions.assertEquals(country1, foundCountry1.get());
-        Assertions.assertEquals(country2, foundCountry2.get());
+        Assertions.assertEquals(CountryUtils.COUNTRY_ID1, foundCountry1.get().getId());
+        Assertions.assertEquals(CountryUtils.COUNTRY_ID2, foundCountry2.get().getId());
 
         Assertions.assertFalse(notFoundCountry1.isPresent());
         Assertions.assertFalse(notFoundCountry2.isPresent());
     }
 
     @Test
+    @DisplayName("Удачное обновление")
     void updateTest() {
-        Country country = new Country("Test Country Update");
-        countryRepository.save(country);
-        country.setName("New name");
+        Country country = countryRepository.getReferenceById(CountryUtils.COUNTRY_ID1);
+        country.setName("СССР");
         countryRepository.save(country);
 
-        Optional<Country> updatedCountry = countryRepository.findById(country.getId());
+        Optional<Country> updatedCountry = countryRepository.findById(CountryUtils.COUNTRY_ID1);
 
         Assertions.assertTrue(updatedCountry.isPresent());
-        Assertions.assertEquals("New name", updatedCountry.get().getName());
+        Assertions.assertEquals("СССР", updatedCountry.get().getName());
     }
 
     @Test
+    @DisplayName("Получение всех записей")
     void findAllTest() {
-        Country country1 = new Country("Country Find All 1");
-        Country country2 = new Country("Country Find All 2");
-        Country country3 = new Country("Country Find All 3");
-
-        countryRepository.saveAll(List.of(country1, country2, country3));
-
-        Assertions.assertEquals(3, countryRepository.findAll().size());
+        Assertions.assertEquals(4, countryRepository.findAll().size());
     }
 
-    @Test
-    void findByNameTest() {
-        Country country1 = new Country("Country");
-        Country country2 = new Country("Russia");
-        Country country3 = new Country("Test CoUnTrY");
-
-        countryRepository.saveAll(List.of(country1, country2, country3));
-
-        List<Country> countries1 = countryRepository.findAll(NameSpecification.byNameWithFullTextSearch("cOuNt"));
-        List<Country> countries2 = countryRepository.findAll(NameSpecification.byNameWithFullTextSearch("u"));
-        List<Country> countries3 = countryRepository.findAll(NameSpecification.byNameWithFullTextSearch("RUS"));
-        List<Country> countries4 = countryRepository.findAll(NameSpecification.byNameWithFullTextSearch("testing"));
-
-        Assertions.assertEquals(2, countries1.size());
-        Assertions.assertEquals(3, countries2.size());
-        Assertions.assertEquals(1, countries3.size());
-        Assertions.assertEquals(0, countries4.size());
+    private static Stream<Arguments> findByNameTest() {
+        return Stream.of(
+                arguments(named("Поиск по названию 1", "Ия"), 3),
+                arguments(named("Поиск по названию 2", "иТа"), 2),
+                arguments(named("Поиск по названию 3", "рОсСиЯ"), 1),
+                arguments(named("Поиск с пустым названием", ""), 4),
+                arguments(named("Поиск без названия", null), 4),
+                arguments(named("Поиск с отсуствующим названием", "Испания"), 0)
+        );
     }
 
-    @Test
-    void existsByNameTest() {
-        Country country1 = new Country("CoUntrY");
-        Country country2 = new Country("Russia");
+    @MethodSource
+    @ParameterizedTest(name = "{0}")
+    @DisplayName("Полнотекстовый поиск стран")
+    void findByNameTest(String text, long expectedSize) {
 
-        countryRepository.saveAll(List.of(country1, country2));
+        List<Country> countries = countryRepository.findAll(NameSpecification.byNameWithFullTextSearch(text));
 
-        Optional<Country> foundCountry1 = countryRepository.findOne(NameSpecification.byNameEqual("country"));
-        Optional<Country> foundCountry2 = countryRepository.findOne(NameSpecification.byNameEqual("rUsSiA"));
-        Optional<Country> notFoundCountry1 = countryRepository.findOne(NameSpecification.byNameEqual("test"));
-        Optional<Country> notFoundCountry2 = countryRepository.findOne(NameSpecification.byNameEqual("C"));
+        Assertions.assertEquals(expectedSize, countries.size());
+    }
 
-        Assertions.assertTrue(foundCountry1.isPresent());
-        Assertions.assertTrue(foundCountry2.isPresent());
-        Assertions.assertEquals(country1, foundCountry1.get());
-        Assertions.assertEquals(country2, foundCountry2.get());
+    private static Stream<Arguments> existsByNameTest() {
+        return Stream.of(
+                arguments(named("Название 1", "РОССИЯ"), true),
+                arguments(named("Название 2", "КиТаЙ"), true),
+                arguments(named("Отсуствующее значение 1", "Польша"), false),
+                arguments(named("Отсуствующее значение 2", "Германия"), false)
+        );
+    }
 
-        Assertions.assertFalse(notFoundCountry1.isPresent());
-        Assertions.assertFalse(notFoundCountry2.isPresent());
+    @MethodSource
+    @ParameterizedTest(name = "{0}")
+    @DisplayName("Наличие по названию")
+    void existsByNameTest(String name, boolean expected) {
+        boolean actual = countryRepository.exists(NameSpecification.byNameEqual(name));
+
+        Assertions.assertEquals(expected, actual);
     }
 }

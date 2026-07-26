@@ -1,6 +1,8 @@
 package ru.tdd.geo.controller.rest_controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -8,19 +10,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
-import ru.tdd.geo.application.models.dto.ExceptionDTO;
+import ru.tdd.bc.dto.ExceptionDto;
+import ru.tdd.bc.openapi.annotations.parameters.PageQueryParameter;
+import ru.tdd.bc.openapi.annotations.parameters.PerPageQueryParameter;
 import ru.tdd.geo.application.models.dto.geo.location.CreateLocationDTO;
 import ru.tdd.geo.application.models.dto.geo.location.LocationDTO;
-import ru.tdd.geo.application.models.dto.geo.location.LocationsDTO;
+import ru.tdd.geo.application.models.dto.geo.location.LocationListData;
 import ru.tdd.geo.application.models.dto.geo.location.UpdateLocationDTO;
-import ru.tdd.geo.application.services.LocationService;
 import ru.tdd.geo.controller.config.OpenApiConfig;
+import ru.tdd.geo.controller.open_api.annotations.LocationIdPathParameter;
 
 import java.util.UUID;
 
@@ -29,20 +32,10 @@ import java.util.UUID;
  * @since 24.01.2026
  * Контроллер для работы с локациями
  */
-@RestController
 @RequestMapping("/geo/locations")
 @SecurityRequirement(name = "jwtAuth")
 @Tag(name = OpenApiConfig.LOCATION_CONTROLLER)
-public class LocationController {
-
-    private final LocationService locationService;
-
-    @Autowired
-    public LocationController(
-            LocationService locationService
-    ) {
-        this.locationService = locationService;
-    }
+public interface LocationController {
 
     @Operation(summary = "Create", description = "Создание локации, доступно только для администрации")
     @ApiResponses(
@@ -58,34 +51,32 @@ public class LocationController {
                             responseCode = "404", description = "Город не найден",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    contentSchema = @Schema(implementation = ExceptionDTO.class)
+                                    contentSchema = @Schema(implementation = ExceptionDto.class)
                             )
                     ),
                     @ApiResponse(
                             responseCode = "409", description = "Локация уже создана",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    contentSchema = @Schema(implementation = ExceptionDTO.class)
+                                    contentSchema = @Schema(implementation = ExceptionDto.class)
                             )
                     ),
                     @ApiResponse(
                             responseCode = "422", description = "Данные не валидны",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    contentSchema = @Schema(implementation = ExceptionDTO.class)
+                                    contentSchema = @Schema(implementation = ExceptionDto.class)
                             )
                     )
             }
     )
     @Secured("ROLE_ADMIN")
     @PostMapping
-    public ResponseEntity<LocationDTO> create(
+    ResponseEntity<LocationDTO> create(
             @Valid
             @RequestBody
             CreateLocationDTO dto
-    ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(locationService.create(dto));
-    }
+    );
 
     @Operation(summary = "Update", description = "Обновление локации, доступно только для администратора")
     @ApiResponses(
@@ -101,29 +92,29 @@ public class LocationController {
                             responseCode = "404", description = "Локация или город не найдены",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ExceptionDTO.class)
+                                    schema = @Schema(implementation = ExceptionDto.class)
                             )
                     ),
                     @ApiResponse(
                             responseCode = "409", description = "Локация уже создана",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ExceptionDTO.class)
+                                    schema = @Schema(implementation = ExceptionDto.class)
                             )
                     )
             }
     )
     @Secured("ROLE_ADMIN")
-    @PutMapping("/{id}")
-    public ResponseEntity<LocationDTO> update(
+    @PutMapping("/{locationId}")
+    ResponseEntity<LocationDTO> update(
+            @NotNull
             @PathVariable
-            UUID id,
+            @LocationIdPathParameter
+            UUID locationId,
             @Valid
             @RequestBody
             UpdateLocationDTO dto
-    ) {
-        return ResponseEntity.status(HttpStatus.OK).body(locationService.update(id, dto));
-    }
+    );
 
     @Operation(summary = "Delete", description = "Удаление локации, доступно только для администратора")
     @ApiResponses(
@@ -133,20 +124,19 @@ public class LocationController {
                             responseCode = "404", description = "Локация не найдена",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ExceptionDTO.class)
+                                    schema = @Schema(implementation = ExceptionDto.class)
                             )
                     )
             }
     )
     @Secured("ROLE_ADMIN")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(
+    @DeleteMapping("/{locationId}")
+    ResponseEntity<?> delete(
+            @NotNull
             @PathVariable
-            UUID id
-    ) {
-        locationService.delete(id);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-    }
+            @LocationIdPathParameter
+            UUID locationId
+    );
 
     @Operation(summary = "Find By Id", description = "Получение локации по идентификатору")
     @ApiResponses(
@@ -162,17 +152,18 @@ public class LocationController {
                             responseCode = "404", description = "Локация не найдена",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ExceptionDTO.class)
+                                    schema = @Schema(implementation = ExceptionDto.class)
                             )
                     )
             }
     )
-    @GetMapping("/{id}")
-    public ResponseEntity<LocationDTO> findById(
-            @PathVariable UUID id
-    ) {
-        return ResponseEntity.status(HttpStatus.OK).body(locationService.getById(id));
-    }
+    @GetMapping("/{locationId}")
+    ResponseEntity<LocationDTO> findById(
+            @NotNull
+            @PathVariable
+            @LocationIdPathParameter
+            UUID locationId
+    );
 
     @Operation(summary = "Find All", description = "Получение списка локаций с фильтрацией")
     @ApiResponses(
@@ -181,22 +172,30 @@ public class LocationController {
                             responseCode = "200", description = "Локации получены",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = LocationsDTO.class)
+                                    schema = @Schema(implementation = LocationListData.class)
                             )
                     )
             }
     )
     @GetMapping
-    public ResponseEntity<LocationsDTO> findAll(
+    ResponseEntity<LocationListData> findAll(
             @RequestParam(name = "name", required = false)
+            @Parameter(name = "name", description = "Название локации", in = ParameterIn.QUERY)
             String name,
-            @RequestParam(name = "city-name", required = false)
+            @RequestParam(name = "city_name", required = false)
+            @Parameter(name = "city_name", description = "Название Города", in = ParameterIn.QUERY)
             String cityName,
+            @RequestParam(name = "region_name", required = false)
+            @Parameter(name = "region_name", description = "Название Региона", in = ParameterIn.QUERY)
+            String regionName,
+            @RequestParam(name = "country_name", required = false)
+            @Parameter(name = "country_name", description = "Название Города", in = ParameterIn.QUERY)
+            String countryName,
+            @PageQueryParameter
             @RequestParam(name = "page", defaultValue = "0")
             int page,
-            @RequestParam(name = "per-page", defaultValue = "100")
+            @PerPageQueryParameter
+            @RequestParam(name = "per_page", defaultValue = "100")
             int perPage
-    ) {
-        return ResponseEntity.status(HttpStatus.OK).body(locationService.getAll(name, cityName, page, perPage));
-    }
+    );
 }

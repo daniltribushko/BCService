@@ -1,11 +1,9 @@
 package ru.tdd.geo.database.entities;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
+import ru.tdd.bc.database.entity.BaseEntity;
+import ru.tdd.bc.database.entity.NameEntity;
 
-import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,7 +13,8 @@ import java.util.Set;
  * Таблица страны
  */
 @Entity
-public class Country extends BaseEntity implements BaseNameEntity {
+@Table(name = "country")
+public class Country extends BaseEntity implements NameEntity {
 
     @Column(name = "name", unique = true, nullable = false)
     private String name;

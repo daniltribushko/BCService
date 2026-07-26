@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.author.TestcontainersConfiguration;
 import ru.tdd.author.database.entitites.Country;
@@ -15,6 +16,7 @@ import ru.tdd.author.database.repositories.CountryRepository;
 import ru.tdd.author.database.specifications.CountrySpecification;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * @author Tribushko Danil
@@ -23,7 +25,7 @@ import java.util.List;
  */
 @DataJpaTest
 @Testcontainers
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@Import(value = TestcontainersConfiguration.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("Тестирование репозитория стран")
 class CountryRepositoryTest {
@@ -49,6 +51,10 @@ class CountryRepositoryTest {
         Country country2 = new Country("Руанда");
         Country country3 = new Country("Китай");
 
+        country1.setId(UUID.randomUUID());
+        country2.setId(UUID.randomUUID());
+        country3.setId(UUID.randomUUID());
+
         countryRepository.saveAll(List.of(country1, country2, country3));
 
         Assertions.assertEquals(2, countryRepository.findAll(CountrySpecification.byNameLike("р")).size());
@@ -61,6 +67,10 @@ class CountryRepositoryTest {
         Country country1 = new Country("Россия");
         Country country2 = new Country("Руанда");
         Country country3 = new Country("Китай");
+
+        country1.setId(UUID.randomUUID());
+        country2.setId(UUID.randomUUID());
+        country3.setId(UUID.randomUUID());
 
         countryRepository.saveAll(List.of(country1, country2, country3));
 

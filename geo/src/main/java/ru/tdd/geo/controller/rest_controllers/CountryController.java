@@ -1,6 +1,8 @@
 package ru.tdd.geo.controller.rest_controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -9,15 +11,15 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
-import ru.tdd.geo.application.models.dto.ExceptionDTO;
+import ru.tdd.bc.dto.ExceptionDto;
+import ru.tdd.bc.openapi.annotations.geo.CountryIdPathParameter;
+import ru.tdd.bc.openapi.annotations.parameters.PageQueryParameter;
+import ru.tdd.bc.openapi.annotations.parameters.PerPageQueryParameter;
 import ru.tdd.geo.application.models.dto.geo.country.*;
-import ru.tdd.geo.application.services.CountryService;
 import ru.tdd.geo.controller.config.OpenApiConfig;
 
 import java.util.UUID;
@@ -27,20 +29,10 @@ import java.util.UUID;
  * @since 06.01.2026
  * Контроллер для работы со странами
  */
-@RestController
 @RequestMapping("/geo/countries")
 @SecurityRequirement(name = "jwtAuth")
 @Tag(name = OpenApiConfig.COUNTRY_CONTROLLER)
-public class CountryController {
-
-    private final CountryService countryService;
-
-    @Autowired
-    public CountryController(
-            CountryService countryService
-    ) {
-        this.countryService = countryService;
-    }
+public interface CountryController {
 
     @Operation(summary = "Create", description = "Создание страны, доступно только для администратора")
     @ApiResponses(
@@ -56,27 +48,25 @@ public class CountryController {
                             responseCode = "409", description = "Страна уже создана",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ExceptionDTO.class)
+                                    schema = @Schema(implementation = ExceptionDto.class)
                             )
                     ),
                     @ApiResponse(
-                            responseCode = "422", description = "Данные для создание не валидны",
+                            responseCode = "422", description = "Данные не валидны",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ExceptionDTO.class)
+                                    schema = @Schema(implementation = ExceptionDto.class)
                             )
                     )
             }
     )
     @PostMapping
     @Secured(value = "ROLE_ADMIN")
-    public ResponseEntity<CountryDTO> create(
+    ResponseEntity<CountryDTO> create(
             @Valid
             @RequestBody
             CreateCountryDTO dto
-    ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(countryService.create(dto));
-    }
+    );
 
     @Operation(summary = "Update", description = "Обновление страны, доступно только для администратора")
     @ApiResponses(
@@ -92,35 +82,29 @@ public class CountryController {
                             responseCode = "404", description = "Страна с указанным идентификатором не найдена",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ExceptionDTO.class)
+                                    schema = @Schema(implementation = ExceptionDto.class)
                             )
                     ),
                     @ApiResponse(
                             responseCode = "409", description = "Страна уже создана",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ExceptionDTO.class)
-                            )
-                    ),
-                    @ApiResponse(
-                            responseCode = "422", description = "Данные для создание не валидны",
-                            content = @Content(
-                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ExceptionDTO.class)
+                                    schema = @Schema(implementation = ExceptionDto.class)
                             )
                     )
             }
     )
-    @PutMapping("/{id}")
+    @PutMapping("/{countryId}")
     @Secured(value = "ROLE_ADMIN")
-    public ResponseEntity<CountryDTO> update(
-            @PathVariable @NotNull UUID id,
+    ResponseEntity<CountryDTO> update(
+            @NotNull
+            @PathVariable
+            @CountryIdPathParameter
+            UUID countryId,
             @Valid
             @RequestBody
             UpdateCountryDTO dto
-    ) {
-        return ResponseEntity.status(HttpStatus.OK).body(countryService.update(id, dto));
-    }
+    );
 
     @Operation(summary = "Delete", description = "Удаление страны, доступно только для администратора")
     @ApiResponses(
@@ -133,18 +117,20 @@ public class CountryController {
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(
-                                            implementation = ExceptionDTO.class
+                                            implementation = ExceptionDto.class
                                     )
                             )
                     )
             }
     )
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{countryId}")
     @Secured(value = "ROLE_ADMIN")
-    public ResponseEntity<?> delete(@PathVariable @NotNull UUID id) {
-        countryService.delete(id);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-    }
+    ResponseEntity<?> delete(
+            @NotNull
+            @PathVariable
+            @CountryIdPathParameter
+            UUID countryId
+    );
 
     @Operation(summary = "Find By Id", description = "Поиск страны по идентификатору")
     @ApiResponses(
@@ -160,16 +146,19 @@ public class CountryController {
                             responseCode = "404", description = "Страна с указанным идентификатором не найдена",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = ExceptionDTO.class)
+                                    schema = @Schema(implementation = ExceptionDto.class)
                             )
                     )
             }
     )
-    @GetMapping("/{id}")
+    @GetMapping("/{countryId}")
     @Secured(value = "ROLE_USER")
-    public ResponseEntity<CountryDetailsDTO> findById(@PathVariable @NotNull UUID id) {
-        return ResponseEntity.status(HttpStatus.OK).body(countryService.getById(id));
-    }
+    ResponseEntity<CountryDetailsDTO> findById(
+            @NotNull
+            @PathVariable
+            @CountryIdPathParameter
+            UUID countryId
+    );
 
     @Operation(summary = "Find All", description = "Получить список странн с определенными фильтрами")
     @ApiResponses(
@@ -177,20 +166,21 @@ public class CountryController {
                     responseCode = "200", description = "Страны получены",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = CountriesDTO.class)
+                            schema = @Schema(implementation = CountryListData.class)
                     )
             )
     )
     @GetMapping
     @Secured(value = "ROLE_USER")
-    public ResponseEntity<CountriesDTO> findAll(
+    ResponseEntity<CountryListData> findAll(
             @RequestParam(name = "name", required = false)
+            @Parameter(name = "name", description = "Название страны", in = ParameterIn.QUERY)
             String name,
+            @PageQueryParameter
             @RequestParam(name = "page", required = false, defaultValue = "0")
             int page,
+            @PerPageQueryParameter
             @RequestParam(name = "per_page", required = false, defaultValue = "10")
             int perPage
-    ) {
-        return ResponseEntity.status(HttpStatus.OK).body(countryService.getAll(name, page, perPage));
-    }
+    );
 }

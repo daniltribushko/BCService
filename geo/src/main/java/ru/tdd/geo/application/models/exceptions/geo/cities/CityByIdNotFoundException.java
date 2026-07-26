@@ -1,6 +1,8 @@
 package ru.tdd.geo.application.models.exceptions.geo.cities;
 
-import ru.tdd.geo.application.models.exceptions.NotFoundException;
+import ru.tdd.bc.http.NotFoundException;
+
+import java.util.UUID;
 
 /**
  * @author Tribushko Danil
@@ -8,7 +10,11 @@ import ru.tdd.geo.application.models.exceptions.NotFoundException;
  */
 public class CityByIdNotFoundException extends NotFoundException {
 
-    public CityByIdNotFoundException() {
-        super("Город с указанным идентификатором не найден");
+    public CityByIdNotFoundException(UUID id) {
+        super(getErrorText(id));
+    }
+
+    public static String getErrorText(UUID id) {
+        return "Город с идентификатором: \"%s\" не найден".formatted(id);
     }
 }

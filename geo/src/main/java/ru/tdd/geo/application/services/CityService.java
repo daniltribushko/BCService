@@ -12,20 +12,15 @@ import java.util.UUID;
  */
 public interface CityService {
 
-    @Transactional
     CityDTO create(CreateCityDTO dto);
 
-    @Transactional
     CityDTO update(UUID id, UpdateCityDTO dto);
 
-    @Transactional
     CityDetailsDTO getById(UUID id);
 
-    @Transactional
     void delete(UUID id);
 
-    @Transactional
-    CitiesDTO getAll(
+    CityListData getAll(
             String name,
             String regionName,
             String countryName,

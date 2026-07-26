@@ -88,6 +88,7 @@ public class AuthorDetailsDTO {
     ) {
         this.id = id;
         this.lastName = lastName;
+        this.country = country;
         this.middleName = middleName;
         this.firstName = firstName;
         this.creationTime = creationTime;

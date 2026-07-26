@@ -3,7 +3,6 @@ package ru.tdd.geo.application.models.dto.geo.region;
 import io.swagger.v3.oas.annotations.media.Schema;
 import ru.tdd.geo.application.models.constants.OpenApiConstants;
 import ru.tdd.geo.application.models.dto.geo.country.CountryDTO;
-import ru.tdd.geo.database.entities.Region;
 
 import java.util.UUID;
 
@@ -43,14 +42,6 @@ public class RegionDTO {
         this.id = id;
         this.name = name;
         this.country = country;
-    }
-
-    public static RegionDTO mapFromEntity(Region region) {
-        return new RegionDTO(
-                region.getId(),
-                region.getName(),
-                CountryDTO.mapFromEntity(region.getCountry())
-        );
     }
 
     public UUID getId() {

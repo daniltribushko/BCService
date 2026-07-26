@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'ru.tdd'
-version = '0.0.1-SNAPSHOT'
+version = '1.1.0'
 description = 'geo'
 
 java {
@@ -16,32 +16,66 @@ java {
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
-    implementation 'org.mapstruct:mapstruct:1.6.3'
+    implementation "com.google.protobuf:protobuf-java:4.35.0"
+
+    //bc
+    implementation 'ru.tdd.bc:imp:1.1.0'
+    implementation 'ru.tdd.bc:database:1.1.0'
+    implementation 'ru.tdd.bc:security:1.1.0'
+    implementation 'ru.tdd.bc:exceptions:1.1.0'
+    implementation 'ru.tdd.bc:security:1.1.0'
+    implementation 'ru.tdd.bc:proto:1.1.0'
+    implementation 'ru.tdd.bc:kafka-core:1.1.0'
+    implementation 'ru.tdd.bc:openapi:1.1.0'
+
+    //jwt
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
     implementation 'io.jsonwebtoken:jjwt-jackson:0.13.0'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15'
-    implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-database-postgresql'
-    implementation 'org.springframework.session:spring-session-data-redis'
-    implementation 'org.springframework.kafka:spring-kafka'
-    runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+
+    //database
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'org.postgresql:postgresql'
+
+    //kafka
+    implementation 'org.springframework.kafka:spring-kafka'
     testImplementation 'org.springframework.kafka:spring-kafka-test'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    //testcontainers
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-    testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'org.testcontainers:kafka'
+
+    //security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    //web
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    //redis
+    implementation 'org.springframework.session:spring-session-data-redis'
+
+    //flyway
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
+    //openapi
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15'
+
+    //test
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    //mapstruct
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 }
 
 tasks.named('test') {

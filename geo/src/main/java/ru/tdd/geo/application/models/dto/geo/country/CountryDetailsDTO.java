@@ -3,11 +3,9 @@ package ru.tdd.geo.application.models.dto.geo.country;
 import io.swagger.v3.oas.annotations.media.Schema;
 import ru.tdd.geo.application.models.constants.OpenApiConstants;
 import ru.tdd.geo.application.models.dto.geo.region.RegionDTO;
-import ru.tdd.geo.database.entities.Country;
 
-import java.time.ZoneId;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * @author Tribushko Danil
@@ -41,17 +39,6 @@ public class CountryDetailsDTO {
         this.id = id;
         this.name = name;
         this.regions = regions;
-    }
-
-    public static CountryDetailsDTO mapFromEntity(Country country) {
-        return new CountryDetailsDTO(
-                country.getId(),
-                country.getName(),
-                country.getRegions().stream().map(RegionDTO::mapFromEntity)
-                        .sorted(Comparator.comparing(RegionDTO::getName))
-                        .toList()
-
-        );
     }
 
     public UUID getId() {

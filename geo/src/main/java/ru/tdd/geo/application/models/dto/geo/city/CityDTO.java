@@ -4,9 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import ru.tdd.geo.application.models.constants.OpenApiConstants;
 import ru.tdd.geo.application.models.dto.geo.country.CountryDTO;
 import ru.tdd.geo.application.models.dto.geo.region.RegionDTO;
-import ru.tdd.geo.database.entities.City;
 
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -52,15 +50,6 @@ public class CityDTO {
         this.name = name;
         this.region = region;
         this.country = country;
-    }
-
-    public static CityDTO mapFromEntity(City city) {
-        return new CityDTO(
-                city.getId(),
-                city.getName(),
-                Optional.ofNullable(city.getRegion()).map(RegionDTO::mapFromEntity).orElse(null),
-                CountryDTO.mapFromEntity(city.getCountry())
-        );
     }
 
     public UUID getId() {

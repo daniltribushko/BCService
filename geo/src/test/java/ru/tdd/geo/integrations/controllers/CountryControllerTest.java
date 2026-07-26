@@ -1,32 +1,47 @@
 package ru.tdd.geo.integrations.controllers;
 
-import org.junit.jupiter.api.BeforeEach;
+import io.swagger.v3.oas.models.PathItem;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.*;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ru.tdd.bc.dto.ExceptionDto;
+import ru.tdd.bc.http.countries.CountryAlreadyExistsException;
+import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
+import ru.tdd.bc.security.jwt.JwtService;
+import ru.tdd.bc.utils.UrlUtils;
 import ru.tdd.geo.TestcontainersConfiguration;
-import ru.tdd.geo.application.models.dto.DTOMapper;
+import ru.tdd.geo.application.models.dto.geo.country.CountryDTO;
+import ru.tdd.geo.application.models.dto.geo.country.CountryListData;
 import ru.tdd.geo.application.models.dto.geo.country.CreateCountryDTO;
 import ru.tdd.geo.application.models.dto.geo.country.UpdateCountryDTO;
 import ru.tdd.geo.application.utils.URLUtils;
 import ru.tdd.geo.database.entities.Country;
-import ru.tdd.geo.database.repositories.CountryRepository;
+import ru.tdd.geo.sql.InitCountriesSqlScripts;
+import ru.tdd.geo.utils.CountryUtils;
+import ru.tdd.geo.utils.UserUtils;
 
-import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -37,236 +52,376 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Набор тестов контроллера стран
  */
 @Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@InitCountriesSqlScripts
+@Import(value = TestcontainersConfiguration.class)
+@DisplayName("Интеграционный тест контроллера стран")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class CountryControllerTest {
 
     private static final String BASE_URL = "/geo/countries";
 
     @Autowired
-    private MockMvc mockMvc;
+    private TestRestTemplate restTemplate;
 
     @Autowired
-    private CountryRepository countryRepository;
+    private JwtService jwtService;
 
-    @BeforeEach
-    void cleanDb() {
-        countryRepository.deleteAll();
+    @Value("${jwt.secret}")
+    private String secretKey;
+
+    @Test
+    @DisplayName("Удачное создание")
+    void createTest() {
+       String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+       CreateCountryDTO dto = new CreateCountryDTO("Австрия");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<CreateCountryDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<CountryDTO> actual = restTemplate.exchange(
+                BASE_URL,
+                HttpMethod.POST,
+                httpEntity,
+                CountryDTO.class
+        );
+
+        Assertions.assertEquals(HttpStatus.CREATED, actual.getStatusCode());
+
+        CountryDTO body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertNotNull(body.getId());
+        Assertions.assertEquals("Австрия", body.getName());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
-    void createTest() throws Exception {
-        CreateCountryDTO createDto = new CreateCountryDTO("New Country");
+    @DisplayName("Не удачное создание - пользователь не является администратором")
+    void createNotAdminFailTest() {
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
 
-        ResultActions response = mockMvc.perform(post(BASE_URL)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(DTOMapper.toJson(createDto))
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<CreateCountryDTO> httpEntity = new HttpEntity<>(new CreateCountryDTO("Test"), headers);
+
+        ResponseEntity<String> actual = restTemplate.exchange(
+                BASE_URL,
+                HttpMethod.POST,
+                httpEntity,
+                String.class
         );
 
-        response.andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id", isA(String.class)))
-                .andExpect(jsonPath("$.name", is(createDto.getName())));
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, actual.getStatusCode());
     }
 
     @Test
-    @WithMockUser(username = "not_admin")
-    void createNotAdminFailTest() throws Exception {
-        CreateCountryDTO createDto = new CreateCountryDTO("New Country");
+    @DisplayName("Не удачное создание - страна уже создана")
+    void createAlreadyExistsFailTest() {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
 
-        ResultActions response = mockMvc.perform(post(BASE_URL)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(DTOMapper.toJson(createDto))
+        CreateCountryDTO dto = new CreateCountryDTO("Россия");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<CreateCountryDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL,
+                HttpMethod.POST,
+                httpEntity,
+                ExceptionDto.class
         );
 
-        response.andExpect(status().isForbidden());
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(CountryAlreadyExistsException.getErrorText("Россия"), body.getMessage());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
-    void createAlreadyExistsFailTest() throws Exception {
-        countryRepository.save(new Country("Already Exists Country"));
+    @DisplayName("Удачное обновление")
+    void updateSuccessTest() {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
 
-        CreateCountryDTO createDto = new CreateCountryDTO("Already Exists Country");
+        UpdateCountryDTO dto = new UpdateCountryDTO("СССР");
 
-        ResultActions response = mockMvc.perform(
-                post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(createDto))
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<UpdateCountryDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<CountryDTO> actual = restTemplate.exchange(
+                BASE_URL + "/" + CountryUtils.COUNTRY_ID1,
+                HttpMethod.PUT,
+                httpEntity,
+                CountryDTO.class
         );
 
-        response.andExpect(status().isConflict())
-                .andExpect(jsonPath("$.statusCode", is(HttpStatus.CONFLICT.value())))
-                .andExpect(jsonPath("$.message", is("Страна с указанным названием уже создана")));
+        Assertions.assertEquals(HttpStatus.OK, actual.getStatusCode());
+
+        CountryDTO body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals("СССР", body.getName());
+        Assertions.assertEquals(CountryUtils.COUNTRY_ID1, body.getId());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void updateSuccessTest() throws Exception {
-        Country country = new Country("Country For Update");
+    @DisplayName("Не удачное обновление - пользователь не является администратором")
+    void updateNotAdminFailTest() {
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
 
-        countryRepository.save(country);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
 
-        ResultActions response = mockMvc.perform(
-                put(BASE_URL + "/" + country.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateCountryDTO("New Country Name")))
+        HttpEntity<UpdateCountryDTO> httpEntity = new HttpEntity<>(new UpdateCountryDTO(), headers);
+
+        ResponseEntity<String> actual = restTemplate.exchange(
+                BASE_URL + "/" + CountryUtils.COUNTRY_ID2,
+                HttpMethod.PUT,
+                httpEntity,
+                String.class
         );
 
-        response.andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(country.getId().toString())))
-                .andExpect(jsonPath("$.name", is("New Country Name")));
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, actual.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Не удачное обновление - страна не найдена")
+    void updateNotFoundFailTest() {
+        UUID countryId = UUID.randomUUID();
+
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<UpdateCountryDTO> httpEntity = new HttpEntity<>(new UpdateCountryDTO(), headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + countryId,
+                HttpMethod.PUT,
+                httpEntity,
+                ExceptionDto.class
+        );
+
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(countryId), body.getMessage());
+    }
+
+    @Test
+    @DisplayName("Не удачное обновление - страна уже создана")
+    void updateAlreadyExistsFailTest() {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        UpdateCountryDTO dto = new UpdateCountryDTO("Россия");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<UpdateCountryDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + CountryUtils.COUNTRY_ID3,
+                HttpMethod.PUT,
+                httpEntity,
+                ExceptionDto.class
+        );
+
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(CountryAlreadyExistsException.getErrorText("Россия"), body.getMessage());
+    }
+
+    @Test
+    @DisplayName("Удачное удаление")
+    void deleteSuccessTest() {
+       String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+       HttpHeaders headers = new HttpHeaders();
+       headers.setContentType(MediaType.APPLICATION_JSON);
+       headers.setBearerAuth(token);
+
+       HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+       ResponseEntity<String> actual = restTemplate.exchange(
+               BASE_URL + "/" + CountryUtils.COUNTRY_ID3,
+               HttpMethod.DELETE,
+               httpEntity,
+               String.class
+       );
+
+       Assertions.assertEquals(HttpStatus.NO_CONTENT, actual.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Не удачное удаление - пользователь не является администратором")
+    void deleteNotAdminFailTest() {
+       String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+       HttpHeaders headers = new HttpHeaders();
+       headers.setContentType(MediaType.APPLICATION_JSON);
+       headers.setBearerAuth(token);
+
+       HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+       ResponseEntity<String> actual =  restTemplate.exchange(
+               BASE_URL + "/" + CountryUtils.COUNTRY_ID1,
+               HttpMethod.DELETE,
+               httpEntity,
+               String.class
+       );
+
+       Assertions.assertEquals(HttpStatus.FORBIDDEN, actual.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Не удачное удаление - страна не найдена")
+    void deleteNotFoundFailTest() {
+        UUID countryId = UUID.randomUUID();
+
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + countryId,
+                HttpMethod.DELETE,
+                httpEntity,
+                ExceptionDto.class
+        );
+
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(countryId), body.getMessage());
     }
 
     @Test
     @WithMockUser(username = "user")
-    void updateNotAdminFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                put(BASE_URL + "/" + UUID.randomUUID())
-                        .content(DTOMapper.toJson(new UpdateCountryDTO(null)))
-                        .contentType(MediaType.APPLICATION_JSON)
+    @DisplayName("Удачное получение по идентификатору")
+    void findByIdSuccessTest() {
+       String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<CountryDTO> actual = restTemplate.exchange(
+                BASE_URL + "/" + CountryUtils.COUNTRY_ID2,
+                HttpMethod.GET,
+                httpEntity,
+                CountryDTO.class
         );
 
-        response.andExpect(status().isForbidden());
+        Assertions.assertEquals(HttpStatus.OK, actual.getStatusCode());
+
+        CountryDTO body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals("Китай", body.getName());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void updateNotFoundFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                put(BASE_URL + "/" + UUID.randomUUID())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateCountryDTO(null)))
+    @DisplayName("Не удачное получение по идентификатору - страна не найдена")
+    void findByIdNotFoundTest() {
+        UUID countryId = UUID.randomUUID();
+
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + countryId,
+                HttpMethod.GET,
+                httpEntity,
+                ExceptionDto.class
         );
 
-        response.andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode", is(HttpStatus.NOT_FOUND.value())))
-                .andExpect(jsonPath("$.message", is("Страна с указанным идентификатором не найдена")));
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
 
+        ExceptionDto body = actual.getBody();
 
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(countryId), body.getMessage());
     }
 
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void updateAlreadyExistsFailTest() throws Exception {
-        Country country1 = new Country("Test Country");
-        Country country2 = new Country("Already Exists Country");
-
-        countryRepository.saveAll(List.of(country1, country2));
-
-        ResultActions response = mockMvc.perform(
-                put(BASE_URL + "/" + country1.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateCountryDTO("Already Exists Country")))
+    private static Stream<Arguments> findAllSuccessTest() {
+        return Stream.of(
+                arguments(named("Поиск по названию 1", "ИЯ"), null, null, 3),
+                arguments(named("Поиск по названию 2", "кИтАй"), null, null, 1),
+                arguments(named("Поиск с пустым названием", ""), null, null, 4),
+                arguments(named("Поиск без названия", null), null, null, 4),
+                arguments(named("Пагинация 1", null),  1, 2, 2),
+                arguments(named("Пагинация 2", null), 5, 10, 0)
         );
-
-        response.andExpect(status().isConflict())
-                .andExpect(jsonPath("$.statusCode", is(HttpStatus.CONFLICT.value())))
-                .andExpect(jsonPath("$.message", is("Страна с указанным названием уже создана")));
     }
 
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void deleteSuccessTest() throws Exception {
-        Country country = new Country("Country For Delete");
+    @MethodSource
+    @ParameterizedTest(name = "{0}")
+    @DisplayName("Получение списка с фильтрами")
+    void findAllSuccessTest(String name, Integer page, Integer perPage, int expectedSize) {
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
 
-        countryRepository.save(country);
+        var urlBuilder = UrlUtils.builder(BASE_URL);
+        if (name != null)
+            urlBuilder.add("name", name);
+        if (page != null)
+            urlBuilder.add("page", page);
+        if (perPage != null)
+            urlBuilder.add("per_page", perPage);
 
-        ResultActions response = mockMvc.perform(
-                delete(BASE_URL + "/" + country.getId())
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<CountryListData> actual = restTemplate.exchange(
+                urlBuilder.build(),
+                HttpMethod.GET,
+                httpEntity,
+                CountryListData.class
         );
 
-        response.andExpect(status().isNoContent());
-    }
+        Assertions.assertEquals(HttpStatus.OK, actual.getStatusCode());
 
-    @Test
-    @WithMockUser(username = "user")
-    void deleteNotAdminFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                delete(BASE_URL + "/" + UUID.randomUUID())
-        );
+        CountryListData body = actual.getBody();
 
-        response.andExpect(status().isForbidden());
-    }
-
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void deleteNotFoundFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                delete(BASE_URL + "/" + UUID.randomUUID())
-        );
-
-        response.andExpect(status().isNotFound());
-    }
-
-    @Test
-    @WithMockUser(username = "user")
-    void findByIdSuccessTest() throws Exception {
-        Country country = new Country("Test Country Find By Id");
-        countryRepository.save(country);
-
-        ResultActions response = mockMvc.perform(
-                get(BASE_URL + "/" + country.getId())
-        );
-
-        response.andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(country.getId().toString())))
-                .andExpect(jsonPath("$.name", is("Test Country Find By Id")));
-    }
-
-    @Test
-    @WithMockUser(username = "user")
-    void findByIdNotFoundTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                get(BASE_URL + "/" + UUID.randomUUID())
-        );
-
-        response.andExpect(status().isNotFound());
-    }
-
-    @Test
-    @WithMockUser(username = "user")
-    void findAllSuccessTest() throws Exception {
-        Country country1 = new Country("Россия");
-        Country country2 = new Country("США");
-        Country country3 = new Country("Руанда");
-        Country country4 = new Country("Уганда");
-
-        countryRepository.saveAll(List.of(country1, country2, country3, country4));
-
-        ResultActions response1 = mockMvc.perform(
-                get(
-                        URLUtils.builder(BASE_URL)
-                                .addQueryParameter("name", "аНДа", false)
-                                .build()
-                )
-        );
-
-        ResultActions response2 = mockMvc.perform(
-                get(
-                        URLUtils.builder(BASE_URL)
-                                .addQueryParameter("page", 3, false)
-                                .addQueryParameter("per_page", 1, false)
-                                .build()
-                )
-        );
-
-        ResultActions response3 = mockMvc.perform(
-                get(
-                        URLUtils.builder(BASE_URL)
-                                .addQueryParameter("name", "А", false)
-                                .build()
-                )
-        );
-
-        response1.andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(2)));
-
-        response2.andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(1)));
-
-        response3.andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(3)));
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(expectedSize, body.getData().size());
     }
 }

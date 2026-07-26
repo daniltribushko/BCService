@@ -1,0 +1,13 @@
+plugins {
+    id 'java'
+}
+
+description = 'kafka'
+
+repositories {
+    mavenCentral()
+}
+
+test {
+    useJUnitPlatform()
+}

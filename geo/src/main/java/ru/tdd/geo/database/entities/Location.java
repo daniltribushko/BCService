@@ -1,6 +1,8 @@
 package ru.tdd.geo.database.entities;
 
 import jakarta.persistence.*;
+import ru.tdd.bc.database.entity.BaseEntity;
+import ru.tdd.bc.database.entity.NameEntity;
 
 /**
  * @author Tribushko Danil
@@ -8,14 +10,14 @@ import jakarta.persistence.*;
  * Таблица небольшой локации
  */
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"name", "city"}))
-public class Location extends BaseEntity implements BaseNameEntity {
+@Table(name = "location", uniqueConstraints = @UniqueConstraint(columnNames = {"name", "city"}))
+public class Location extends BaseEntity implements NameEntity {
 
     @Column(name = "name", nullable = false)
     private String name;
 
     @ManyToOne
-    @JoinColumn(name = "city", nullable = false)
+    @JoinColumn(name = "city_id", nullable = false)
     private City city;
 
     public Location() {}

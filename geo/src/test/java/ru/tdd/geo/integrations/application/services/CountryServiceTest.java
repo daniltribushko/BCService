@@ -1,25 +1,32 @@
 package ru.tdd.geo.integrations.application.services;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
-import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ru.tdd.bc.http.AlreadyExistsException;
+import ru.tdd.bc.http.countries.CountryAlreadyExistsException;
+import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
 import ru.tdd.geo.TestcontainersConfiguration;
 import ru.tdd.geo.application.models.dto.geo.country.*;
-import ru.tdd.geo.application.models.exceptions.AlreadyExistsException;
-import ru.tdd.geo.application.models.exceptions.NotFoundException;
 import ru.tdd.geo.application.services.CountryService;
-import ru.tdd.geo.database.entities.Country;
 import ru.tdd.geo.database.repositories.CountryRepository;
+import ru.tdd.geo.sql.InitCountriesSqlScripts;
+import ru.tdd.geo.utils.CountryUtils;
 
-import java.time.ZoneId;
 import java.util.UUID;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 /**
  * @author Tribushko Danil
@@ -28,7 +35,9 @@ import java.util.UUID;
  */
 @SpringBootTest
 @Testcontainers
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@InitCountriesSqlScripts
+@Import(value = TestcontainersConfiguration.class)
+@DisplayName("Интеграционный тест сервиса стран")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class CountryServiceTest {
 
@@ -38,162 +47,124 @@ public class CountryServiceTest {
     @Autowired
     private CountryService countryService;
 
-    @BeforeEach
-    void cleanDb() {
-        countryRepository.deleteAll();
-    }
-
     @Test
-    @Transactional
+    @DisplayName("Удачное создание")
     void saveSuccessTest() {
-        long expectedCount = countryRepository.count() + 1;
         CountryDTO countryDTO = countryService.create(new CreateCountryDTO("New Country"));
         long actualCount = countryRepository.count();
 
         Assertions.assertEquals("New Country", countryDTO.getName());
-        Assertions.assertEquals(expectedCount, actualCount);
+        Assertions.assertEquals(5, actualCount);
     }
 
     @Test
-    @Transactional
+    @DisplayName("Неудачное создание - страна уже создана")
     void saveAlreadyExistsFailTest() {
-        countryRepository.save(new Country("Already Exists Country"));
-
         AlreadyExistsException actual = Assertions.assertThrows(
                 AlreadyExistsException.class,
-                () -> countryService.create(new CreateCountryDTO("Already Exists Country"))
+                () -> countryService.create(new CreateCountryDTO("Россия"))
         );
 
-        Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным названием уже создана", actual.getMessage());
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
+        Assertions.assertEquals(CountryAlreadyExistsException.getErrorText("Россия"), actual.getMessage());
     }
 
-    @Test
-    @Transactional
-    void updateSuccessTest() {
-        Country country1 = new Country("Country For Update");
-        Country country2 = new Country("Country For Update Time Zone");
-        Country country3 = new Country("Country For Update With Null Dto");
+    private static Stream<Arguments> updateSuccessTest() {
+        return Stream.of(
+                arguments(named("Название 1", CountryUtils.COUNTRY_ID1), "СССР"),
+                arguments(named("Название 2", CountryUtils.COUNTRY_ID2), "КНР"),
+                arguments(named("Название 3", CountryUtils.COUNTRY_ID4), "Римская Империя")
+        );
+    }
 
-        countryRepository.save(country1);
-        countryRepository.save(country2);
-        countryRepository.save(country3);
+    @MethodSource
+    @ParameterizedTest(name = "{0}")
+    @DisplayName("Удачное обновление")
+    void updateSuccessTest(UUID id, String name) {
 
         CountryDTO actualUpdateName = countryService.update(
-                country1.getId(),
-                new UpdateCountryDTO("New Country Name")
+                id,
+                new UpdateCountryDTO(name)
         );
 
-        CountryDTO actualUpdateZoneId = countryService.update(
-                country2.getId(),
-                new UpdateCountryDTO(null)
-        );
-
-        CountryDTO actualWithNulls = countryService.update(
-                country3.getId(),
-                new UpdateCountryDTO(null)
-        );
-
-        Assertions.assertEquals(country1.getId(), actualUpdateName.getId());
-        Assertions.assertEquals("New Country Name", actualUpdateName.getName());
-
-        Assertions.assertEquals(country2.getId(), actualUpdateZoneId.getId());
-        Assertions.assertEquals("Country For Update Time Zone", country2.getName());
-
-        Assertions.assertEquals(country3.getId(), actualWithNulls.getId());
-        Assertions.assertEquals(country3.getName(), actualWithNulls.getName());
+        Assertions.assertEquals(id, actualUpdateName.getId());
+        Assertions.assertEquals(name, actualUpdateName.getName());
     }
 
     @Test
-    @Transactional
+    @DisplayName("Неудачное обновление - страна уже создана")
     void updateAlreadyExistsFail() {
-        Country country1 = new Country("Already Exists Country");
-        Country country2 = new Country("Country For Fail Update");
-
-        countryRepository.save(country1);
-        countryRepository.save(country2);
-
-        AlreadyExistsException actual = Assertions.assertThrows(
-                AlreadyExistsException.class,
-                () -> countryService.update(country2.getId(), new UpdateCountryDTO("Already Exists Country"))
+        CountryAlreadyExistsException actual = Assertions.assertThrows(
+                CountryAlreadyExistsException.class,
+                () -> countryService.update(CountryUtils.COUNTRY_ID2, new UpdateCountryDTO("Россия"))
         );
 
-        Assertions.assertEquals(HttpStatus.CONFLICT.value(), actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным названием уже создана", actual.getMessage());
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
+        Assertions.assertEquals(CountryAlreadyExistsException.getErrorText("Россия"), actual.getMessage());
     }
 
     @Test
-    @Transactional
+    @DisplayName("Удачное удаление")
     void deleteSuccessTest() {
-        Country country = new Country("Country For Delete");
-        countryRepository.save(country);
-        long expectedCount = countryRepository.count() - 1;
-        countryService.delete(country.getId());
+        countryService.delete(CountryUtils.COUNTRY_ID2);
         long actualCount = countryRepository.count();
 
-        Assertions.assertEquals(expectedCount, actualCount);
+        Assertions.assertEquals(3, actualCount);
     }
 
     @Test
-    @Transactional
+    @DisplayName("Неудачное удаление - страна не найдена")
     void deleteNotFoundFailTest() {
-        NotFoundException actual = Assertions.assertThrows(
-                NotFoundException.class,
-                () -> countryService.delete(UUID.randomUUID())
+        UUID countryId = UUID.randomUUID();
+        CountryByIdNotFoundException actual = Assertions.assertThrows(
+                CountryByIdNotFoundException.class,
+                () -> countryService.delete(countryId)
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(countryId), actual.getMessage());
     }
 
     @Test
-    @Transactional
+    @DisplayName("Удачное получение по идентификатору")
     void findByIdSuccessTest() {
-        Country country = new Country("Find By Id Test Country");
-        countryRepository.save(country);
+        CountryDetailsDTO actual = countryService.getById(CountryUtils.COUNTRY_ID3);
 
-        CountryDetailsDTO actual = countryService.getById(country.getId());
-
-        Assertions.assertEquals(country.getId(), actual.getId());
-        Assertions.assertEquals("Find By Id Test Country", actual.getName());
+        Assertions.assertEquals(CountryUtils.COUNTRY_ID3, actual.getId());
+        Assertions.assertEquals("Франция", actual.getName());
     }
 
     @Test
-    @Transactional
+    @DisplayName("Неудачное получение по идентификатору - страна не найдена")
     void findByIdNotFoundFailTest() {
-        NotFoundException actual = Assertions.assertThrows(
-                NotFoundException.class,
-                () -> countryService.getById(UUID.randomUUID())
+        UUID countryId = UUID.randomUUID();
+        CountryByIdNotFoundException actual = Assertions.assertThrows(
+                CountryByIdNotFoundException.class,
+                () -> countryService.getById(countryId)
         );
 
-        Assertions.assertEquals(HttpStatus.NOT_FOUND.value(), actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(countryId), actual.getMessage());
     }
 
-    @Test
-    void findAllTest() {
-        Country country1 = new Country("Russia");
-        Country country2 = new Country("USA");
-        Country country3 = new Country("China");
-        Country country4 = new Country("Rus");
-        Country country5 = new Country("UK");
+    private static Stream<Arguments> findAllTest() {
+        return Stream.of(
+                arguments(named("Поиск по названию 1", "ия"), 0, 100, 3),
+                arguments(named("Поиск по названию 2", "КиТаЙ"), 0, 100, 1),
+                arguments(named("Поиск по названию 3", "ИТА"), 0, 100, 2),
+                arguments(named("Поиск с пустым названием", ""), 0, 100, 4),
+                arguments(named("Поиск без названия", null), 0, 100, 4),
+                arguments(named("Пагинация 1", null), 2, 10, 0),
+                arguments(named("Пагинация 2", null), 1, 3, 1)
+        );
+    }
 
-        countryRepository.save(country1);
-        countryRepository.save(country2);
-        countryRepository.save(country3);
-        countryRepository.save(country4);
-        countryRepository.save(country5);
+    @MethodSource
+    @ParameterizedTest(name = "{0}")
+    @DisplayName("Полнотекстовый поиск по странам")
+    void findAllTest(String name, int page, int perPage, int expectedSize) {
+        CountryListData countries = countryService.getAll(name, page, perPage);
 
-        CountriesDTO countries1 = countryService.getAll("Us", 1, 2);
-        CountriesDTO countries2 = countryService.getAll("cHIn", 1, 1);
-        CountriesDTO countries3 = countryService.getAll("u", 1, 2);
-        CountriesDTO countries4 = countryService.getAll(null, 0, 100);
-        CountriesDTO countries5 = countryService.getAll("", 0, 100);
-
-        Assertions.assertEquals(1, countries1.getData().size());
-        Assertions.assertEquals(0, countries2.getData().size());
-        Assertions.assertEquals(2, countries3.getData().size());
-        Assertions.assertEquals(5, countries4.getData().size());
-        Assertions.assertEquals(5, countries5.getData().size());
+        Assertions.assertEquals(expectedSize, countries.getData().size());
     }
 }

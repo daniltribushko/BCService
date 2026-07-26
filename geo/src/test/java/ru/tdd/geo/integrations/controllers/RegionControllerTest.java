@@ -1,31 +1,55 @@
 package ru.tdd.geo.integrations.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
-import org.springframework.http.MediaType;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.*;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ru.tdd.bc.dto.ExceptionDto;
+import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
+import ru.tdd.bc.security.jwt.JwtService;
+import ru.tdd.bc.utils.TextUtils;
 import ru.tdd.geo.TestcontainersConfiguration;
-import ru.tdd.geo.application.models.dto.DTOMapper;
+import ru.tdd.geo.application.models.dto.geo.location.UpdateLocationDTO;
 import ru.tdd.geo.application.models.dto.geo.region.CreateRegionDTO;
+import ru.tdd.geo.application.models.dto.geo.region.RegionDTO;
+import ru.tdd.geo.application.models.dto.geo.region.RegionListData;
 import ru.tdd.geo.application.models.dto.geo.region.UpdateRegionDTO;
+import ru.tdd.geo.application.models.exceptions.geo.region.RegionAlreadyExistsException;
+import ru.tdd.geo.application.models.exceptions.geo.region.RegionByIdNotFoundException;
 import ru.tdd.geo.application.utils.URLUtils;
 import ru.tdd.geo.database.entities.Country;
 import ru.tdd.geo.database.entities.Region;
 import ru.tdd.geo.database.repositories.CountryRepository;
 import ru.tdd.geo.database.repositories.RegionRepository;
+import ru.tdd.geo.sql.InitRegionsSqlScripts;
+import ru.tdd.geo.utils.CountryUtils;
+import ru.tdd.geo.utils.RegionUtils;
+import ru.tdd.geo.utils.UserUtils;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,340 +60,457 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Набор тестов контроллера по работе с регионами
  */
 @Testcontainers
-@SpringBootTest
-@AutoConfigureMockMvc
-@ImportTestcontainers(value = TestcontainersConfiguration.class)
+@InitRegionsSqlScripts
+@DisplayName(value = "Тест контроллера регионов")
+@Import(value = TestcontainersConfiguration.class)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class RegionControllerTest {
 
     private static final String BASE_URL = "/geo/regions";
 
-    private final MockMvc mockMvc;
-
-    private final CountryRepository countryRepository;
-
-    private final RegionRepository regionRepository;
+    @Autowired
+    private RegionRepository regionRepository;
 
     @Autowired
-    RegionControllerTest(MockMvc mockMvc, CountryRepository countryRepository, RegionRepository regionRepository) {
-        this.mockMvc = mockMvc;
-        this.countryRepository = countryRepository;
-        this.regionRepository = regionRepository;
-    }
+    private TestRestTemplate restTemplate;
 
-    @BeforeEach
-    void cleanDb() {
-        regionRepository.deleteAll();
-        countryRepository.deleteAll();
+    @Autowired
+    private JwtService jwtService;
+
+    @Value("${jwt.secret}")
+    private String secretKey;
+
+    @Test
+    @DisplayName("Удачное сохранение")
+    void saveSuccessTest() {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        CreateRegionDTO dto = new CreateRegionDTO("Тюменская область", CountryUtils.COUNTRY_ID1);
+
+        HttpEntity<CreateRegionDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<RegionDTO> actual = restTemplate.exchange(
+                BASE_URL,
+                HttpMethod.POST,
+                httpEntity,
+                RegionDTO.class
+        );
+
+        Assertions.assertEquals(HttpStatus.CREATED, actual.getStatusCode());
+
+        RegionDTO body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertNotNull(body.getId());
+        Assertions.assertEquals("Тюменская область", body.getName());
+        Assertions.assertEquals(CountryUtils.COUNTRY_ID1, body.getCountry().getId());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void saveSuccessTest() throws Exception {
-        Country country = new Country("Test Country");
+    @DisplayName("Не удачное сохранение - пользователь не является администратором")
+    void saveNotAdminFailTest() {
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
 
-        countryRepository.save(country);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
 
-        CreateRegionDTO dto = new CreateRegionDTO("New Region", country.getId());
+        CreateRegionDTO dto = new CreateRegionDTO("Тест", CountryUtils.COUNTRY_ID1);
 
-        ResultActions response = mockMvc.perform(
-                post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(dto))
+        HttpEntity<CreateRegionDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<String> actual = restTemplate.exchange(
+                BASE_URL,
+                HttpMethod.POST,
+                httpEntity,
+                String.class
         );
 
-        response.andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name", is(dto.getName())))
-                .andExpect(jsonPath("$.country.id", is(country.getId().toString())));
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, actual.getStatusCode());
     }
 
     @Test
-    @WithMockUser(username = "user")
-    void saveNotAdminFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new CreateRegionDTO("Region For Create", UUID.randomUUID())))
+    @DisplayName("Неудачное сохранение - Регион уже создан")
+    void saveAlreadyExistsFailTest() {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        CreateRegionDTO dto = new CreateRegionDTO("Московская область", CountryUtils.COUNTRY_ID1);
+
+        HttpEntity<CreateRegionDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL,
+                HttpMethod.POST,
+                httpEntity,
+                ExceptionDto.class
         );
 
-        response.andExpect(status().isForbidden());
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(
+                RegionAlreadyExistsException.getErrorText("Московская область", CountryUtils.COUNTRY_ID1),
+                body.getMessage()
+        );
     }
 
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void saveAlreadyExistsFailTest() throws Exception {
-        Country country = new Country("Russia");
-
-        countryRepository.save(country);
-
-        Region region = new Region("Moscow Oblast", country);
-
-        regionRepository.save(region);
-
-        CreateRegionDTO dto = new CreateRegionDTO("Moscow Oblast", country.getId());
-
-        ResultActions response = mockMvc.perform(
-                post(BASE_URL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(dto))
-        );
-
-        response.andExpect(status().isConflict())
-                .andExpect(
-                        jsonPath(
-                                "$.message",
-                                is("Регион с указанным названием и страной уже создан")
-                        )
-                );
-    }
-
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void updateSuccessTest() throws Exception {
-        Country country1 = new Country("Russia");
-        Country country2 = new Country("China");
-
-        countryRepository.saveAll(List.of(country1, country2));
-
-        Region region1 = new Region("Region 1", country1);
-        Region region2 = new Region("Region 2", country1);
-
-        regionRepository.saveAll(List.of(region1, region2));
-
-        UpdateRegionDTO dto1 = new UpdateRegionDTO("New Region", null);
-        UpdateRegionDTO dto2 = new UpdateRegionDTO(null, country2.getId());
-        UpdateRegionDTO dto3 = new UpdateRegionDTO("Updated Region 2", country2.getId());
-
-        ResultActions response1 = mockMvc.perform(
-                put(BASE_URL + "/" + region1.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(dto1))
-        );
-
-        ResultActions response2 = mockMvc.perform(
-                put(BASE_URL + "/" + region1.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(dto2))
-        );
-
-        ResultActions response3 = mockMvc.perform(
-                put(BASE_URL + "/" + region2.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(dto3))
-        );
-
-        response1.andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(region1.getId().toString())))
-                .andExpect(jsonPath("$.name", is("New Region")));
-
-        response2.andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(region1.getId().toString())))
-                .andExpect(jsonPath("$.country.id", is(country2.getId().toString())));
-
-        response3.andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(region2.getId().toString())))
-                .andExpect(jsonPath("$.name", is("Updated Region 2")))
-                .andExpect(jsonPath("$.country.id", is(country2.getId().toString())));
-    }
-
-    @Test
-    @WithMockUser(username = "user")
-    void updateNotAdminFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                put(BASE_URL + "/" + UUID.randomUUID())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateRegionDTO("Region", UUID.randomUUID())))
-        );
-
-        response.andExpect(status().isForbidden());
-    }
-
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void updateRegionNotFoundTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                put(BASE_URL + "/" + UUID.randomUUID())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateRegionDTO(null, null)))
-        );
-
-        response.andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message", is("Регион с указанным идентификатором не найден")));
-    }
-
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void updateCountryNotFoundTest() throws Exception {
-        Country country = new Country("Test Country");
-
-        countryRepository.save(country);
-
-        Region region = new Region("Test Region", country);
-
-        regionRepository.save(region);
-
-        ResultActions response = mockMvc.perform(
-                put(BASE_URL + "/" + region.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateRegionDTO(null, UUID.randomUUID())))
-        );
-
-        response.andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message", is("Страна с указанным идентификатором не найдена")));
-    }
-
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void updateAlreadyExistsFailTest() throws Exception {
-        Country country1 = new Country("Test Country 1");
-        Country country2 = new Country("Test Country 2");
-
-        countryRepository.saveAll(List.of(country1, country2));
-
-        Region region1 = new Region("Region 1", country1);
-        Region region2 = new Region("Already Exists Region", country1);
-        Region region3 = new Region("Already Exists Region", country2);
-
-        regionRepository.saveAll(List.of(region1, region2, region3));
-
-        ResultActions response1 = mockMvc.perform(
-                put(BASE_URL + "/" + region1.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateRegionDTO("Already Exists Region", null)))
-        );
-
-        ResultActions response2 = mockMvc.perform(
-                put(BASE_URL + "/" + region1.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(DTOMapper.toJson(new UpdateRegionDTO("Already Exists Region", country2.getId())))
-        );
-
-        response1.andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message", is("Регион с указанным названием и страной уже создан")));
-
-        response2.andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message", is("Регион с указанным названием и страной уже создан")));
-    }
-
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void deleteSuccessTest() throws Exception {
-        Country country = new Country("Country 1");
-
-        countryRepository.save(country);
-
-        Region region = new Region("Region For Delete", country);
-
-        regionRepository.save(region);
-
-        ResultActions response = mockMvc.perform(
-                delete(BASE_URL + "/" + region.getId())
-        );
-
-        response.andExpect(status().isNoContent());
-    }
-
-    @Test
-    @WithMockUser(username = "user")
-    void deleteNotAdminFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                delete(BASE_URL + "/" + UUID.randomUUID())
-        );
-
-        response.andExpect(status().isForbidden());
-    }
-
-    @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
-    void deleteNotFoundFailTest() throws Exception {
-        ResultActions response = mockMvc.perform(
-                delete(BASE_URL + "/" + UUID.randomUUID())
-        );
-
-        response.andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message", is("Регион с указанным идентификатором не найден")));
-    }
-
-    @Test
-    @WithMockUser(username = "user")
-    void findByIdSuccessTest() throws Exception {
-        Country country = new Country("Test Country");
-
-        countryRepository.save(country);
-
-        Region region1 = new Region("Test Region 1", country);
-        Region region2 = new Region("Test Region 2", country);
-        Region region3 = new Region("Test Region 3", country);
-
-        regionRepository.saveAll(List.of(region1, region2, region3));
-
-        ResultActions response = mockMvc.perform(
-                get(BASE_URL + "/" + region2.getId())
-        );
-
-        response.andExpect(status().isOk())
-                .andExpect(jsonPath("$.name", is(region2.getName())));
-    }
-
-    @Test
-    @WithMockUser(username = "user")
-    void findByIdNotFoundFail() throws Exception {
-        ResultActions response = mockMvc.perform(
-                get(BASE_URL + "/" + UUID.randomUUID())
-        );
-
-        response.andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message", is("Регион с указанным идентификатором не найден")));
-    }
-
-    @Test
-    @WithMockUser(username = "username")
-    void findAllTest() throws Exception {
-        Country country1 = new Country("cOUNtry TeSt");
-        Country country2 = new Country("TESting");
-        Country country3 = new Country("CoUnTrY");
-
-        countryRepository.saveAll(List.of(country1, country2, country3));
-
-        Region region1 = new Region("TesT rEgIoN", country2);
-        Region region2 = new Region("RWte", country1);
-        Region region3 = new Region("obLast", country3);
-        Region region4 = new Region("tEsTiNg", country1);
-        Region region5 = new Region("MOScow OblASt", country2);
-
-        regionRepository.saveAll(List.of(region1, region2, region3, region4, region5));
-
-        ResultActions response1 = mockMvc.perform(
-                get(
-                        URLUtils.builder(BASE_URL)
-                                .addQueryParameter("country-name", "TEST", false)
-                                .addQueryParameter("name", "OBLAST", false)
-                                .build()
+    private static Stream<Arguments> updateSuccessTest() {
+        return Stream.of(
+                arguments(
+                        named(
+                                "Обновление названия",
+                                RegionUtils.REGION_ID2
+                        ),
+                        new UpdateRegionDTO("Брянская область", null),
+                        "Брянская область",
+                        CountryUtils.COUNTRY_ID1
+                ),
+                arguments(
+                        named(
+                                "Обновление страны",
+                                RegionUtils.REGION_ID5
+                        ),
+                        new UpdateRegionDTO(null, CountryUtils.COUNTRY_ID3),
+                        "Хэйлунцзян",
+                        CountryUtils.COUNTRY_ID3
+                ),
+                arguments(
+                        named(
+                                "Обновление названия и страны",
+                                RegionUtils.REGION_ID6
+                        ),
+                        new UpdateRegionDTO("Тюменская область", CountryUtils.COUNTRY_ID1),
+                        "Тюменская область",
+                        CountryUtils.COUNTRY_ID1
                 )
         );
+    }
 
-        ResultActions response2 = mockMvc.perform(
-                get(
-                        URLUtils.builder(BASE_URL)
-                                .addQueryParameter("country-name", "CoUnTrY", false)
-                                .build()
-                )
+    @MethodSource
+    @ParameterizedTest(name = "{0}")
+    @DisplayName("Удачное обновление")
+    void updateSuccessTest(UUID regionId, UpdateRegionDTO dto, String expectedName, UUID expectedCountryId) {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<UpdateRegionDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<RegionDTO> actual = restTemplate.exchange(
+                BASE_URL + "/" + regionId,
+                HttpMethod.PUT,
+                httpEntity,
+                RegionDTO.class
         );
 
-        ResultActions response3 = mockMvc.perform(
-          get(
-                  URLUtils.builder(BASE_URL)
-                          .addQueryParameter("name", "tE", false)
-                          .build()
-          )
+        Assertions.assertEquals(HttpStatus.OK, actual.getStatusCode());
+
+
+        RegionDTO body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(regionId, body.getId());
+        Assertions.assertEquals(expectedName, body.getName());
+        Assertions.assertEquals(expectedCountryId, body.getCountry().getId());
+    }
+
+    @Test
+    @WithMockUser(username = "user")
+    void updateNotAdminFailTest() {
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<UpdateLocationDTO> httpEntity = new HttpEntity<>(new UpdateLocationDTO(), headers);
+
+        ResponseEntity<String> actual = restTemplate.exchange(
+                BASE_URL + "/" + RegionUtils.REGION_ID5,
+                HttpMethod.PUT,
+                httpEntity,
+                String.class
         );
 
-        response1.andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(1)));
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, actual.getStatusCode());
+    }
 
-        response2.andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(3)));
+    @Test
+    @DisplayName("Не удачное обновление - регион не найден")
+    void updateRegionNotFoundTest() {
+        UUID regionId = UUID.randomUUID();
 
-        response3.andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(3)));
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<UpdateRegionDTO> httpEntity = new HttpEntity<>(new UpdateRegionDTO(), headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + regionId,
+                HttpMethod.PUT,
+                httpEntity,
+                ExceptionDto.class
+        );
+
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(RegionByIdNotFoundException.getErrorText(regionId), body.getMessage());
+    }
+
+    @Test
+    @DisplayName("Не удачное обновление - страна не найдена")
+    void updateCountryNotFoundTest() {
+        UUID countryId = UUID.randomUUID();
+
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        UpdateRegionDTO dto = new UpdateRegionDTO(null, countryId);
+
+        HttpEntity<UpdateRegionDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + RegionUtils.REGION_ID2,
+                HttpMethod.PUT,
+                httpEntity,
+                ExceptionDto.class
+        );
+
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(countryId), body.getMessage());
+    }
+
+    @Test
+    @DisplayName("Не удачное обновление - регион уже создан")
+    void updateAlreadyExistsFailTest() {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        UpdateRegionDTO dto = new UpdateRegionDTO("Московская область", CountryUtils.COUNTRY_ID1);
+
+        HttpEntity<UpdateRegionDTO> httpEntity = new HttpEntity<>(dto, headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + RegionUtils.REGION_ID6,
+                HttpMethod.PUT,
+                httpEntity,
+                ExceptionDto.class
+        );
+
+        Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(RegionAlreadyExistsException.getErrorText("Московская область", CountryUtils.COUNTRY_ID1), body.getMessage());
+    }
+
+    @Test
+    @DisplayName("Удачное удаление")
+    void deleteSuccessTest() {
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> actual = restTemplate.exchange(
+                BASE_URL + "/" + RegionUtils.REGION_ID3,
+                HttpMethod.DELETE,
+                httpEntity,
+                String.class
+        );
+
+        Assertions.assertEquals(HttpStatus.NO_CONTENT, actual.getStatusCode());
+        Assertions.assertEquals(5, regionRepository.findAll().size());
+    }
+
+    @Test
+    @DisplayName("Не удачное удаление - пользователь не является администратором")
+    void deleteNotAdminFailTest() {
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> actual = restTemplate.exchange(
+                BASE_URL + "/" + RegionUtils.REGION_ID2,
+                HttpMethod.DELETE,
+                httpEntity,
+                String.class
+        );
+
+        Assertions.assertEquals(HttpStatus.FORBIDDEN, actual.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Не удачное удаление - регион не найден")
+    void deleteNotFoundFailTest() {
+        UUID regionId = UUID.randomUUID();
+
+        String token = jwtService.generateToken(UserUtils.ADMIN, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + regionId,
+                HttpMethod.DELETE,
+                httpEntity,
+                ExceptionDto.class
+        );
+
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(RegionByIdNotFoundException.getErrorText(regionId), body.getMessage());
+    }
+
+    @Test
+    @DisplayName("Удачное получение по идентификатору")
+    void findByIdSuccessTest() {
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<RegionDTO> actual = restTemplate.exchange(
+                BASE_URL + "/" + RegionUtils.REGION_ID4,
+                HttpMethod.GET,
+                httpEntity,
+                RegionDTO.class
+        );
+
+        Assertions.assertEquals(HttpStatus.OK, actual.getStatusCode());
+
+        RegionDTO body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(RegionUtils.REGION_ID4, body.getId());
+        Assertions.assertEquals("Аньхой", body.getName());
+        Assertions.assertEquals(CountryUtils.COUNTRY_ID2, body.getCountry().getId());
+    }
+
+    @Test
+    @DisplayName("Не удачное получение по идентификатору - регион не найден")
+    void findByIdNotFoundFail() {
+        UUID regionId = UUID.randomUUID();
+
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<ExceptionDto> actual = restTemplate.exchange(
+                BASE_URL + "/" + regionId,
+                HttpMethod.GET,
+                httpEntity,
+                ExceptionDto.class
+        );
+
+        Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
+
+        ExceptionDto body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(RegionByIdNotFoundException.getErrorText(regionId), body.getMessage());
+    }
+
+    private static Stream<Arguments> findAllTest() {
+        return Stream.of(
+                arguments(named("Поиск по названию 1", "ОБЛАСТЬ"), null, null, null, 3),
+                arguments(named("Поиск по названию 2", "хой"), null, null, null, 1),
+                arguments(named("Поиск по названию страны 1", null), "Китай", null, null, 2),
+                arguments(named("Поиск по названию страны 2", null), "Россия", null, null, 3),
+                arguments(named("Поиск по названию региона и страны 1", "оВсКаЯ"), "Россия", null, null, 2),
+                arguments(named("Поиск по названию региона и страны 2", "Сицилия"), "Италия", null, null, 1),
+                arguments(named("Поиск без названий", null), null, null, null, 6),
+                arguments(named("Поиск с пустыми названиями", ""), "", null, null, 6),
+                arguments(named("Пагинация 1", null), null, 5, 1, 1),
+                arguments(named("Пагинация 2", null), null, 3, 2, 0)
+        );
+    }
+
+    @MethodSource
+    @ParameterizedTest(name = "{0}")
+    @DisplayName("Получение с фильтрацией")
+    void findAllTest(String name, String countryName, Integer page, Integer perPage, long expectedSize) {
+        String token = jwtService.generateToken(UserUtils.USER, secretKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        var urlBuilder = URLUtils.builder(BASE_URL);
+
+        if (!TextUtils.isEmpty(name))
+            urlBuilder.addQueryParameter("name", name);
+        if (!TextUtils.isEmpty(countryName))
+            urlBuilder.addQueryParameter("country_name", countryName);
+        if (page != null)
+            urlBuilder.addQueryParameter("page", page);
+        if (perPage != null)
+            urlBuilder.addQueryParameter("per_page", perPage);
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<RegionListData> actual = restTemplate.exchange(
+                urlBuilder.build(),
+                HttpMethod.GET,
+                httpEntity,
+                RegionListData.class
+        );
+
+        Assertions.assertEquals(HttpStatus.OK, actual.getStatusCode());
+
+        RegionListData body = actual.getBody();
+
+        Assertions.assertNotNull(body);
+        Assertions.assertEquals(expectedSize, body.getData().size());
     }
 }
