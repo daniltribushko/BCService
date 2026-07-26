@@ -10,6 +10,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
 import ru.tdd.geo.application.mappers.CityMapper;
 import ru.tdd.geo.application.mappers.LocationMapper;
 import ru.tdd.geo.application.models.dto.geo.city.CityDTO;
@@ -20,7 +21,6 @@ import ru.tdd.geo.application.models.dto.geo.country.CountryDTO;
 import ru.tdd.geo.application.models.dto.geo.region.RegionDTO;
 import ru.tdd.geo.application.models.exceptions.geo.cities.CityAlreadyExistException;
 import ru.tdd.geo.application.models.exceptions.geo.cities.CityByIdNotFoundException;
-import ru.tdd.geo.application.models.exceptions.geo.country.CountryByIdNotFoundException;
 import ru.tdd.geo.application.models.exceptions.geo.region.RegionByIdNotFoundException;
 import ru.tdd.geo.application.services.imp.CityServiceImp;
 import ru.tdd.geo.database.entities.City;
@@ -66,11 +66,11 @@ class CityServiceTest {
     @DisplayName("Удачное создание")
     void createSuccessTest() {
         UUID countryId = UUID.randomUUID();
-        Country country = new Country("Test Country");
+        Country country = new Country("Россия");
         country.setId(countryId);
 
         UUID regionId = UUID.randomUUID();
-        Region region = new Region("Test Region", country);
+        Region region = new Region("Свердловская область", country);
         region.setId(regionId);
 
         Mockito.when(cityRepository.exists(any(Specification.class))).thenReturn(false);
@@ -79,7 +79,7 @@ class CityServiceTest {
                 .thenReturn(
                         new CityDTO(
                                 UUID.randomUUID(),
-                                "New City",
+                                "Екатеринбург",
                                 new RegionDTO(
                                         regionId,
                                         null,
@@ -92,10 +92,10 @@ class CityServiceTest {
                         )
                 );
 
-        CityDTO actual = cityService.create(new CreateCityDTO("New City", region.getId(), null));
+        CityDTO actual = cityService.create(new CreateCityDTO("Екатеринбург", region.getId(), null));
 
         Mockito.verify(cityRepository).save(any(City.class));
-        Assertions.assertEquals("New City", actual.getName());
+        Assertions.assertEquals("Екатеринбург", actual.getName());
         Assertions.assertEquals(region.getId(), actual.getRegion().getId());
         Assertions.assertEquals(country.getId(), actual.getCountry().getId());
     }
@@ -103,26 +103,33 @@ class CityServiceTest {
     @Test
     @DisplayName("Неудачное создание - город уже создан")
     void createAlreadyExistsFailTest() {
+        UUID countryId = UUID.randomUUID();
         UUID regionId = UUID.randomUUID();
+
+        Country country = new Country("Россия");
+        country.setId(countryId);
+
+        Region region = new Region("Свердловская область", country);
+        region.setId(regionId);
 
         Mockito.when(cityRepository.exists(any(Specification.class))).thenReturn(true);
         Mockito.when(regionRepository.findById(regionId)).thenReturn(
-                Optional.of(new Region("Region", new Country("Country")))
+                Optional.of(region)
         );
 
         CityAlreadyExistException actual = Assertions.assertThrows(
                 CityAlreadyExistException.class,
                 () -> cityService.create(
                         new CreateCityDTO(
-                                "Already Exists City",
+                                "Екатеринбург",
                                 regionId,
-                                UUID.randomUUID()
+                                countryId
                         )
                 )
         );
 
         Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
-        Assertions.assertEquals("Город с указанным названием, страной, регионом уже создан", actual.getMessage());
+        Assertions.assertEquals(CityAlreadyExistException.getErrorText("Екатеринбург", countryId, regionId), actual.getMessage());
     }
 
     @Test
@@ -134,11 +141,11 @@ class CityServiceTest {
 
         RegionByIdNotFoundException actual = Assertions.assertThrows(
                 RegionByIdNotFoundException.class,
-                () -> cityService.create(new CreateCityDTO("Test City", regionId, UUID.randomUUID()))
+                () -> cityService.create(new CreateCityDTO("Москва", regionId, UUID.randomUUID()))
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Регион с указанным идентификатором не найден", actual.getMessage());
+        Assertions.assertEquals(RegionByIdNotFoundException.getErrorText(regionId), actual.getMessage());
     }
 
     @Test
@@ -154,23 +161,23 @@ class CityServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(countryId), actual.getMessage());
     }
 
     @Test
     @DisplayName("Удачное обновление")
     void updateSuccessTest() {
-        Country country1 = new Country("Test Country 1");
-        Country country2 = new Country("Test Country 2");
+        Country country1 = new Country("Россия");
+        Country country2 = new Country("Китай");
         country1.setId(UUID.randomUUID());
         country2.setId(UUID.randomUUID());
 
-        Region region1 = new Region("Test Region 1", country1);
+        Region region1 = new Region("Московская область", country1);
         Region region2 = new Region("Test Region 2", country2);
         region1.setId(UUID.randomUUID());
         region2.setId(UUID.randomUUID());
 
-        City city = new City("Test City", null, country1);
+        City city = new City("Москва", null, country1);
         UUID cityId = city.getId();
         city.setId(cityId);
 
@@ -182,11 +189,12 @@ class CityServiceTest {
 
         Mockito.when(cityMapper.toDto(city))
                 .thenReturn(
-                        new CityDTO(cityId, "New City", null, null)
+                        new CityDTO(cityId, "Киров", null, null)
                 );
-        CityDTO actual1 = cityService.update(cityId, new UpdateCityDTO("New City", null, null));
+        CityDTO actual1 = cityService.update(cityId, new UpdateCityDTO("Киров", null, null));
 
-        Assertions.assertEquals("New City", actual1.getName());
+        Assertions.assertEquals(cityId, actual1.getId());
+        Assertions.assertEquals("Киров", actual1.getName());
 
         Mockito.when(cityMapper.toDto(city))
                 .thenReturn(
@@ -247,20 +255,20 @@ class CityServiceTest {
 
         CityByIdNotFoundException actual = Assertions.assertThrows(
                 CityByIdNotFoundException.class,
-                () -> cityService.update(cityId, new UpdateCityDTO("New City", null, null))
+                () -> cityService.update(cityId, new UpdateCityDTO("Сургут", null, null))
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Город с указанным идентификатором не найден", actual.getMessage());
+        Assertions.assertEquals(CityByIdNotFoundException.getErrorText(cityId), actual.getMessage());
     }
 
     @Test
     @DisplayName("Неудачное обновление - регион не найден")
     void updateRegionNotFoundFailTest() {
-        Country country = new Country("TestCountry");
+        Country country = new Country("Россия");
         country.setId(UUID.randomUUID());
 
-        City city = new City("Test City", null, country);
+        City city = new City("Москва", null, country);
         city.setId(UUID.randomUUID());
 
         UUID regionId = UUID.randomUUID();
@@ -274,13 +282,13 @@ class CityServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Регион с указанным идентификатором не найден", actual.getMessage());
+        Assertions.assertEquals(RegionByIdNotFoundException.getErrorText(regionId), actual.getMessage());
     }
 
     @Test
     @DisplayName("Неудачное обновление - страна не найдена")
     void updateCountryNotFoundFailTest() {
-        City city = new City("Test City", null, new Country("Country"));
+        City city = new City("Владимир", null, new Country("Country"));
         city.setId(UUID.randomUUID());
 
         UUID countryId = UUID.randomUUID();
@@ -294,32 +302,35 @@ class CityServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(countryId), actual.getMessage());
     }
 
     @Test
-    @DisplayName("Неудачное обновление - город не найден")
+    @DisplayName("Неудачное обновление - город не уже создан")
     void updateAlreadyExistsException() {
-        Country country = new Country("Test Country");
-        country.setId(UUID.randomUUID());
+        UUID cityId = UUID.randomUUID();
+        UUID countryId = UUID.randomUUID();
 
-        City city = new City("Test City", null, country);
-        city.setId(UUID.randomUUID());
+        Country country = new Country("Россия");
+        country.setId(countryId);
 
-        Mockito.when(cityRepository.findById(city.getId())).thenReturn(Optional.of(city));
+        City city = new City("Нижний Новгород", null, country);
+        city.setId(cityId);
+
+        Mockito.when(cityRepository.findById(cityId)).thenReturn(Optional.of(city));
         Mockito.when(cityRepository.exists(any(Specification.class))).thenReturn(true);
 
         CityAlreadyExistException actual = Assertions.assertThrows(
                 CityAlreadyExistException.class,
-                () -> cityService.update(city.getId(), new UpdateCityDTO("City", null, null))
+                () -> cityService.update(cityId, new UpdateCityDTO("Великий Новгород", null, null))
         );
 
         Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
-        Assertions.assertEquals("Город с указанным названием, страной, регионом уже создан", actual.getMessage());
+        Assertions.assertEquals(CityAlreadyExistException.getErrorText("Великий Новгород", countryId, null), actual.getMessage());
     }
 
     @Test
-    @DisplayName("Удачное обновление")
+    @DisplayName("Удачное получение по идентификатору")
     void getByIdSuccessTest() {
         Country country = new Country("Test Country");
         country.setId(UUID.randomUUID());
@@ -329,7 +340,7 @@ class CityServiceTest {
         city.setId(cityId);
 
         Mockito.when(cityRepository.findById(city.getId())).thenReturn(Optional.of(city));
-        Mockito.when(cityMapper.toDetailsDto(city)).thenReturn(
+        Mockito.when(cityMapper.toDetailsDto(any(City.class))).thenReturn(
                 new CityDetailsDTO(
                         cityId,
                         "Test City",
@@ -346,7 +357,7 @@ class CityServiceTest {
     }
 
     @Test
-    @DisplayName("Неудачное обновление - город не найден")
+    @DisplayName("Неудачное получение по идентификатору - город не найден")
     void getByIdNotFoundFailTest() {
         UUID id = UUID.randomUUID();
 
@@ -358,7 +369,7 @@ class CityServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Город с указанным идентификатором не найден", actual.getMessage());
+        Assertions.assertEquals(CityByIdNotFoundException.getErrorText(id), actual.getMessage());
     }
 
     @Test
@@ -378,16 +389,16 @@ class CityServiceTest {
     @Test
     @DisplayName("Неудачное удаление - город не найден")
     void deleteNotFoundTest() {
-        UUID id = UUID.randomUUID();
+        UUID cityId = UUID.randomUUID();
 
-        Mockito.when(cityRepository.findById(id)).thenReturn(Optional.empty());
+        Mockito.when(cityRepository.findById(cityId)).thenReturn(Optional.empty());
 
         CityByIdNotFoundException actual = Assertions.assertThrows(
                 CityByIdNotFoundException.class,
-                () -> cityService.delete(id)
+                () -> cityService.delete(cityId)
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Город с указанным идентификатором не найден", actual.getMessage());
+        Assertions.assertEquals(CityByIdNotFoundException.getErrorText(cityId), actual.getMessage());
     }
 }

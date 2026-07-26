@@ -7,6 +7,8 @@ import ru.tdd.geo.application.models.dto.geo.region.RegionDTO;
 import ru.tdd.geo.application.models.dto.geo.region.RegionDetailsDTO;
 import ru.tdd.geo.database.entities.Region;
 
+import java.util.List;
+
 /**
  * @author Tribushko Danil
  * @since 14.04.2026
@@ -20,6 +22,7 @@ public interface RegionMapper {
 
     RegionDTO toDto(Region region);
 
-    @Mapping(target = "countryDTO", source = "country")
+    List<RegionDTO> toDto(List<Region> regions);
+
     RegionDetailsDTO toDetailsDto(Region region);
 }

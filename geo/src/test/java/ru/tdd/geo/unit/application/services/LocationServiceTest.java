@@ -55,8 +55,12 @@ class LocationServiceTest {
     @DisplayName("Удачное создание")
     void createSuccessTest() {
         UUID cityId = UUID.randomUUID();
+        UUID countryId = UUID.randomUUID();
+        UUID locationId = UUID.randomUUID();
 
-        City city = new City("Test City", null, new Country("Test Country"));
+        Country country = new Country("Россия");
+        country.setId(countryId);
+        City city = new City("Москва", null, country);
         city.setId(cityId);
 
         Mockito.when(cityRepository.findById(cityId)).thenReturn(Optional.of(city));
@@ -64,8 +68,8 @@ class LocationServiceTest {
         Mockito.when(locationMapper.toDto(any(Location.class)))
                 .thenReturn(
                         new LocationDTO(
-                                UUID.randomUUID(),
-                                "Test Location",
+                                locationId,
+                                "Мавзолей",
                                 new CityDTO(
                                         cityId,
                                         null,
@@ -75,27 +79,30 @@ class LocationServiceTest {
                         )
                 );
 
-        LocationDTO actual = locationService.create(new CreateLocationDTO("Test Location", cityId));
+        LocationDTO actual = locationService.create(new CreateLocationDTO("Мавзолей", cityId));
 
         Mockito.verify(locationRepository).save(any(Location.class));
 
-        Assertions.assertEquals("Test Location", actual.getName());
+        Assertions.assertEquals(locationId, actual.getId());
+        Assertions.assertEquals("Мавзолей", actual.getName());
         Assertions.assertEquals(cityId, actual.getCity().getId());
     }
 
     @Test
-    @DisplayName("Неудачное создание - локация уэе создана")
+    @DisplayName("Неудачное создание - локация уже создана")
     void createAlreadyExistsFailTest() {
+        UUID cityId = UUID.randomUUID();
+
         Mockito.when(locationRepository.exists(any(Specification.class))).thenReturn(true);
 
         LocationAlreadyExistsException actual = Assertions.assertThrows(
                 LocationAlreadyExistsException.class,
-                () -> locationService.create(new CreateLocationDTO("Test City", UUID.randomUUID()))
+                () -> locationService.create(new CreateLocationDTO("Мавзолей", cityId))
         );
 
         Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
         Assertions.assertEquals(
-                "Локация с указанным названием и городом уже создана",
+                LocationAlreadyExistsException.getErrorText("Мавзолей", cityId),
                 actual.getMessage()
         );
     }
@@ -115,7 +122,7 @@ class LocationServiceTest {
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals(
-                "Город с указанным идентификатором не найден",
+                CityByIdNotFoundException.getErrorText(cityId),
                 actual.getMessage()
         );
     }
@@ -124,31 +131,28 @@ class LocationServiceTest {
     @DisplayName("Удачное обновление")
     void updateSuccessTest() {
         UUID locationId = UUID.randomUUID();
-        UUID newCityId = UUID.randomUUID();
+        UUID cityId = UUID.randomUUID();
 
-        Country country = new Country("Test Country");
+        Country country = new Country("Россия");
+
+        City city = new City("Москва", null, country);
+        city.setId(cityId);
 
         Location location = new Location(
-                "Test Location",
-                new City(
-                        "Test City",
-                        null,
-                        country
-                )
+                "Мавзолей",
+                city
         );
+
         location.setId(locationId);
 
-        City city = new City("New City", null, country);
-        city.setId(newCityId);
 
         Mockito.when(locationRepository.findById(locationId)).thenReturn(Optional.of(location));
-        Mockito.when(cityRepository.findById(newCityId)).thenReturn(Optional.of(city));
         Mockito.when(locationRepository.exists(any(Specification.class))).thenReturn(false);
         Mockito.when(locationMapper.toDto(any(Location.class)))
                 .thenReturn(
                         new LocationDTO(
                                 locationId,
-                                "Updated Location",
+                                "Красная площадь",
                                 new CityDTO(
                                         city.getId(),
                                         null,
@@ -161,12 +165,12 @@ class LocationServiceTest {
         LocationDTO actual = locationService.update(
                 locationId,
                 new UpdateLocationDTO(
-                        "Updated Location",
-                        city.getId()
+                        "Красная площадь",
+                        null
                 )
         );
 
-        Assertions.assertEquals("Updated Location", actual.getName());
+        Assertions.assertEquals("Красная площадь", actual.getName());
         Assertions.assertEquals(city.getId(), actual.getCity().getId());
     }
 
@@ -183,16 +187,21 @@ class LocationServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Локация с указанным идентификатором не найдена", actual.getMessage());
+        Assertions.assertEquals(LocationByIdNotFoundException.getErrorText(locationId), actual.getMessage());
     }
 
     @Test
     @DisplayName("Неудачное обновление - локация уже создана")
     void updateAlreadyExistsFailTest() {
         UUID locationId = UUID.randomUUID();
+        UUID cityId = UUID.randomUUID();
+
+        City city = new City("Test City", null, null);
+        city.setId(cityId);
+
         Location location = new Location(
-                "Test Location",
-                new City("Test City", null, null)
+                "Мавзолей",
+                city
         );
 
         Mockito.when(locationRepository.findById(locationId)).thenReturn(Optional.of(location));
@@ -200,12 +209,12 @@ class LocationServiceTest {
 
         LocationAlreadyExistsException actual = Assertions.assertThrows(
                 LocationAlreadyExistsException.class,
-                () -> locationService.update(locationId, new UpdateLocationDTO("New Location", null))
+                () -> locationService.update(locationId, new UpdateLocationDTO("Красная площадь", null))
         );
 
         Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
         Assertions.assertEquals(
-                "Локация с указанным названием и городом уже создана",
+                LocationAlreadyExistsException.getErrorText("Красная площадь", cityId),
                 actual.getMessage()
         );
     }
@@ -215,7 +224,7 @@ class LocationServiceTest {
     void deleteSuccessTest() {
         UUID locationId = UUID.randomUUID();
         Location location = new Location(
-                "Test Location",
+                "Мавзолей",
                 null
         );
 
@@ -240,7 +249,7 @@ class LocationServiceTest {
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals(
-                "Локация с указанным идентификатором не найдена",
+                LocationByIdNotFoundException.getErrorText(locationId),
                 actual.getMessage()
         );
     }
@@ -248,15 +257,19 @@ class LocationServiceTest {
     @Test
     @DisplayName("Удачное получение по идентификатору")
     void getByIdSuccessTest() {
+        UUID countryId = UUID.randomUUID();
+        UUID cityId = UUID.randomUUID();
         UUID locationId = UUID.randomUUID();
 
+        Country country = new Country("Россия");
+        country.setId(countryId);
+
+        City city = new City("Москва", null, country);
+        city.setId(cityId);
+
         Location location = new Location(
-                "Test Location",
-                new City(
-                        "Test City",
-                        null,
-                        new Country("Test Country")
-                )
+                "Мавзолей",
+               city
         );
         location.setId(locationId);
 
@@ -265,7 +278,7 @@ class LocationServiceTest {
                 .thenReturn(
                         new LocationDTO(
                                 locationId,
-                                "Test Location",
+                                "Мавзолей",
                                 null
                         )
                 );
@@ -273,7 +286,7 @@ class LocationServiceTest {
         LocationDTO actual = locationService.getById(locationId);
 
         Assertions.assertEquals(locationId, actual.getId());
-        Assertions.assertEquals("Test Location", actual.getName());
+        Assertions.assertEquals("Мавзолей", actual.getName());
     }
 
     @Test
@@ -290,7 +303,7 @@ class LocationServiceTest {
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
         Assertions.assertEquals(
-                "Локация с указанным идентификатором не найдена",
+                LocationByIdNotFoundException.getErrorText(locationId),
                 actual.getMessage()
         );
     }

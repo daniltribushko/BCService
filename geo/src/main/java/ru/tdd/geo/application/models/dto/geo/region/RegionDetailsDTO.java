@@ -36,7 +36,7 @@ public class RegionDetailsDTO {
             name = "country",
             description = "Страна региона"
     )
-    private CountryDTO countryDTO;
+    private CountryDTO country;
 
     @Schema(
             name = "cities",
@@ -46,10 +46,10 @@ public class RegionDetailsDTO {
 
     public RegionDetailsDTO() {}
 
-    public RegionDetailsDTO(UUID id, String name, CountryDTO countryDTO, List<CityDTO> cities) {
+    public RegionDetailsDTO(UUID id, String name, CountryDTO country, List<CityDTO> cities) {
         this.id = id;
         this.name = name;
-        this.countryDTO = countryDTO;
+        this.country = country;
         this.cities = cities;
     }
 
@@ -69,12 +69,12 @@ public class RegionDetailsDTO {
         this.name = name;
     }
 
-    public CountryDTO getCountryDTO() {
-        return countryDTO;
+    public CountryDTO getCountry() {
+        return country;
     }
 
-    public void setCountryDTO(CountryDTO countryDTO) {
-        this.countryDTO = countryDTO;
+    public void setCountry(CountryDTO country) {
+        this.country = country;
     }
 
     public List<CityDTO> getCities() {

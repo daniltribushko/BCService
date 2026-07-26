@@ -10,6 +10,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import ru.tdd.bc.security.filters.SampleJwtFilter;
 
 /**
  * @author Tribushko Danil
@@ -20,11 +21,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
-    private final JwtFilter jwtFilter;
+    private final SampleJwtFilter jwtFilter;
 
     @Autowired
     public SecurityConfig(
-            JwtFilter jwtFilter
+            SampleJwtFilter jwtFilter
     ) {
         this.jwtFilter = jwtFilter;
     }

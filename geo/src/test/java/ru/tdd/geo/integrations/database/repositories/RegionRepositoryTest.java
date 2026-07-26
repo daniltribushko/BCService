@@ -1,27 +1,34 @@
 package ru.tdd.geo.integrations.database.repositories;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.context.annotation.Import;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.geo.TestcontainersConfiguration;
 import ru.tdd.geo.database.entities.Country;
 import ru.tdd.geo.database.entities.Region;
 import ru.tdd.geo.database.repositories.CountryRepository;
 import ru.tdd.geo.database.repositories.RegionRepository;
-import ru.tdd.geo.database.specifications.NameSpecification;
 import ru.tdd.geo.database.specifications.RegionSpecification;
+import ru.tdd.geo.sql.InitRegionsSqlScripts;
+import ru.tdd.geo.utils.CountryUtils;
+import ru.tdd.geo.utils.RegionUtils;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 /**
  * @author Tribushko Danil
@@ -29,10 +36,10 @@ import java.util.UUID;
  * Набор тестов для репозитория регионов
  */
 @DataJpaTest
-@Transactional
 @Testcontainers
-@Import(value = TestcontainersConfiguration.class)
+@InitRegionsSqlScripts
 @DisplayName("Тест репозитория регионов")
+@Import(value = TestcontainersConfiguration.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class RegionRepositoryTest {
 
@@ -42,53 +49,31 @@ public class RegionRepositoryTest {
     @Autowired
     private RegionRepository regionRepository;
 
-    @BeforeEach
-    void cleanDb() {
-        regionRepository.deleteAll();
-        countryRepository.deleteAll();
-    }
-
     @Test
     @DisplayName("Удачное сохранение")
     void saveTest() {
-        Country country = new Country("Save Test Country");
-        country.addRegion(new Region("Save Test Region", country));
-
-        long expectedCount = regionRepository.count() + 1;
-        countryRepository.save(country);
+        Country country = countryRepository.getReferenceById(CountryUtils.COUNTRY_ID1);
+        regionRepository.save(new Region("Брянская область", country));
         long actualCount = regionRepository.count();
 
-        Assertions.assertEquals(expectedCount, actualCount);
+        Assertions.assertEquals(7, actualCount);
     }
 
     @Test
     @DisplayName("Удачное удаление")
     void deleteTest() {
-        Country country = new Country("Delete Test Country");
-        Region region = new Region("Delete Test Region", country);
-
-        countryRepository.save(country);
-        regionRepository.save(region);
-
-        long expectedCount = regionRepository.count() - 1;
+        Region region = regionRepository.getReferenceById(RegionUtils.REGION_ID4);
         regionRepository.delete(region);
         long actualCount = regionRepository.count();
 
-        Assertions.assertEquals(expectedCount, actualCount);
+        Assertions.assertEquals(5, actualCount);
     }
 
     @Test
     @DisplayName("Удачное получение по идентификатору")
     void findByIdTest() {
-        Country country = new Country("Find By Id Test Country");
-        Region region1 = new Region("Find By Id Test Region 1", country);
-        Region region2 = new Region("Find By Id Test Region 2", country);
-
-        countryRepository.save(country);
-        regionRepository.saveAll(List.of(region1, region2));
-
-        Optional<Region> foundRegion1 = regionRepository.findById(region1.getId());
-        Optional<Region> foundRegion2 = regionRepository.findById(region2.getId());
+        Optional<Region> foundRegion1 = regionRepository.findById(RegionUtils.REGION_ID3);
+        Optional<Region> foundRegion2 = regionRepository.findById(RegionUtils.REGION_ID6);
 
         Optional<Region> notFoundRegion1 = regionRepository.findById(UUID.randomUUID());
         Optional<Region> notFoundRegion2 = regionRepository.findById(UUID.randomUUID());
@@ -96,8 +81,8 @@ public class RegionRepositoryTest {
         Assertions.assertTrue(foundRegion1.isPresent());
         Assertions.assertTrue(foundRegion2.isPresent());
 
-        Assertions.assertEquals(region1, foundRegion1.get());
-        Assertions.assertEquals(region2, foundRegion2.get());
+        Assertions.assertEquals(RegionUtils.REGION_ID3, foundRegion1.get().getId());
+        Assertions.assertEquals(RegionUtils.REGION_ID6, foundRegion2.get().getId());
 
         Assertions.assertFalse(notFoundRegion1.isPresent());
         Assertions.assertFalse(notFoundRegion2.isPresent());
@@ -106,98 +91,63 @@ public class RegionRepositoryTest {
     @Test
     @DisplayName("Удачное обновление")
     void updateTest() {
-        Country country = new Country("Update Test Country");
-        Region region = new Region("Update Test Region", country);
-
-        countryRepository.save(country);
-        regionRepository.save(region);
-
-        region.setName("New Updated Name");
+        Region region = regionRepository.getReferenceById(RegionUtils.REGION_ID3);
+        region.setName("Брянская область");
 
         regionRepository.save(region);
 
         Optional<Region> updatedRegion = regionRepository.findById(region.getId());
 
         Assertions.assertTrue(updatedRegion.isPresent());
-        Assertions.assertEquals("New Updated Name", region.getName());
+        Assertions.assertEquals("Брянская область", region.getName());
     }
 
     @Test
     @DisplayName("Получение всех записей")
     void findAllTest() {
-        Country country = new Country("Find All Test Country");
-
-        countryRepository.save(country);
-
-        Region region1 = new Region("Find All Test Region 1", country);
-        Region region2 = new Region("Find All Test Region 2", country);
-        Region region3 = new Region("Find All Test Region 3", country);
-
-        regionRepository.saveAll(List.of(region1, region2, region3));
-
-        Assertions.assertEquals(3, regionRepository.findAll().size());
+        Assertions.assertEquals(6, regionRepository.findAll().size());
     }
 
-    @Test
+    private static Stream<Arguments> findWithFiltersTest() {
+        return Stream.of(
+                arguments(named("Поиск по названию 1", "ЛаСтЬ"), null, 0, 10, 3),
+                arguments(named("Поиск по названию 2", "аньхой"), null, 0, 10, 1),
+                arguments(named("Поиск по названию страны 1", null), "Китай", 0, 10, 2),
+                arguments(named("Поиск по названию региона 2", null), "РОС", 0, 10, 3),
+                arguments(named("Поиск по названию региона и страны 1", "АНЬ"), "ай", 0, 10, 1),
+                arguments(named("Поиск по названию региона и страны 2", "иЛи"), "ИТ", 0, 10, 1),
+                arguments(named("Поиск без названий", null), null, 0, 10, 6),
+                arguments(named("Поиск с пустыми названиями", ""), "", 0, 10, 6),
+                arguments(named("Пагинация 1", null), null, 4, 1, 1),
+                arguments(named("Пагинация 2", null), null, 1, 3, 3)
+        );
+    }
+
+    @MethodSource
+    @ParameterizedTest(name = "{0}")
     @DisplayName("Полнотекстовый поиск по названию и стране")
-    void findByNameAndCountryNameTest() {
-        Country country = new Country("Find By Name Test Country");
-        Country country1 = new Country("CoUntRY Test");
-        Country country2 = new Country("Testing");
+    void findWithFiltersTest(String name, String countryName, int page, int perPage, long expectedSize) {
+        List<Region> regions = regionRepository.findAll(
+                RegionSpecification.byNameAndCountryNameFullTextSearch(name, countryName),
+                PageRequest.of(page, perPage)
+        ).getContent();
 
-        countryRepository.saveAll(List.of(country, country1, country2));
-
-        Region region1 = new Region("Test DisTrIcr", country);
-        Region region2 = new Region("TeSt", country1);
-        Region region3 = new Region("region", country2);
-
-        regionRepository.saveAll(List.of(region1, region2, region3));
-
-        List<Region> regions1 = regionRepository.findAll(
-                RegionSpecification.byNameAndCountryNameFullTextSearch("tE", "tEsT")
-        );
-        List<Region> regions2 = regionRepository.findAll(
-                RegionSpecification.byNameAndCountryNameFullTextSearch("dIs", null)
-        );
-        List<Region> regions3 = regionRepository.findAll(
-                RegionSpecification.byNameAndCountryNameFullTextSearch("GiON", null)
-        );
-        List<Region> regions4 = regionRepository.findAll(
-                RegionSpecification.byNameAndCountryNameFullTextSearch(null, "cOuNtRy")
-        );
-
-        Assertions.assertEquals(2, regions1.size());
-        Assertions.assertEquals(1, regions2.size());
-        Assertions.assertEquals(1, regions3.size());
-        Assertions.assertEquals(2, regions4.size());
+        Assertions.assertEquals(expectedSize, regions.size());
     }
 
-    @Test
+    private static Stream<Arguments> existsByNameAndCountryTest() {
+        return Stream.of(
+                arguments(named("Наличие 1", "Московская область"), CountryUtils.COUNTRY_ID1, true),
+                arguments(named("Наличие 2", "АНЬХОЙ"), CountryUtils.COUNTRY_ID2, true),
+                arguments(named("Отсутствие 1", "Брянская область"), CountryUtils.COUNTRY_ID1, false),
+                arguments(named("Отсутсвие 2", "аньхой"), UUID.randomUUID(), false)
+        );
+    }
+
+    @MethodSource
+    @ParameterizedTest(name = "{0}")
     @DisplayName("Наличие по названию и стране")
-    void existsByNameAndCountryTest() {
-        Country country1 = new Country("Country 1");
-        Country country2 = new Country("Country 2");
-
-        countryRepository.saveAll(List.of(country1, country2));
-
-        Region region1 = new Region("ХМАО", country1);
-        Region region2 = new Region("Московская область", country2);
-        Region region3 = new Region("Краснодарский край", country2);
-
-        regionRepository.saveAll(List.of(region1, region2, region3));
-
-        boolean actual1 = regionRepository.exists(
-                RegionSpecification.byNameAndCountryIdEqual("ХМАО", country1.getId())
-        );
-        boolean actual2 = regionRepository.exists(
-                RegionSpecification.byNameAndCountryIdEqual("Московская область", country1.getId())
-        );
-        boolean actual3 = regionRepository.exists(
-                RegionSpecification.byNameAndCountryIdEqual("Краснодарский край", country2.getId())
-        );
-
-        Assertions.assertTrue(actual1);
-        Assertions.assertFalse(actual2);
-        Assertions.assertTrue(actual3);
+    void existsByNameAndCountryTest(String name, UUID countryId, boolean isExists) {
+        Assertions.assertEquals(isExists, regionRepository.exists(RegionSpecification.byNameAndCountryIdEqual(name, countryId)));
     }
 }

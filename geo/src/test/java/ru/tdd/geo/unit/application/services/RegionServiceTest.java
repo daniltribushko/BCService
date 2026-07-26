@@ -10,13 +10,13 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
 import ru.tdd.geo.application.mappers.RegionMapper;
 import ru.tdd.geo.application.models.dto.geo.country.CountryDTO;
 import ru.tdd.geo.application.models.dto.geo.region.CreateRegionDTO;
 import ru.tdd.geo.application.models.dto.geo.region.RegionDTO;
 import ru.tdd.geo.application.models.dto.geo.region.RegionDetailsDTO;
 import ru.tdd.geo.application.models.dto.geo.region.UpdateRegionDTO;
-import ru.tdd.geo.application.models.exceptions.geo.country.CountryByIdNotFoundException;
 import ru.tdd.geo.application.models.exceptions.geo.region.RegionAlreadyExistsException;
 import ru.tdd.geo.application.models.exceptions.geo.region.RegionByIdNotFoundException;
 import ru.tdd.geo.application.services.imp.RegionServiceImp;
@@ -54,43 +54,48 @@ class RegionServiceTest {
     @Test
     @DisplayName("Удачное создание")
     void saveSuccessTest() {
-        Country country = new Country("Create Region Test Country");
-        country.setId(UUID.randomUUID());
+        UUID countryId = UUID.randomUUID();
+        Country country = new Country("Россия");
+        country.setId(countryId);
+
+        UUID regionId = UUID.randomUUID();
 
         Mockito.when(regionRepository.exists(any(Specification.class))).thenReturn(false);
         Mockito.when(countryRepository.findById(country.getId())).thenReturn(Optional.of(country));
         Mockito.when(regionMapper.toDto(any(Region.class)))
                 .thenReturn(
                         new RegionDTO(
-                                UUID.randomUUID(),
-                                "New Region",
+                                regionId,
+                                "Московская область",
                                 new CountryDTO(
-                                        country.getId(),
-                                        "Create Region Test Country"
+                                        countryId,
+                                        "Россия"
                                 )
                         )
                 );
 
-        RegionDTO actual = regionServiceImp.create(new CreateRegionDTO("New Region", country.getId()));
+        RegionDTO actual = regionServiceImp.create(new CreateRegionDTO("Московская обалсть", countryId));
 
         Mockito.verify(regionRepository).save(any(Region.class));
-        Assertions.assertEquals("New Region", actual.getName());
-        Assertions.assertEquals("Create Region Test Country", actual.getCountry().getName());
+        Assertions.assertEquals(regionId, actual.getId());
+        Assertions.assertEquals("Московская область", actual.getName());
+        Assertions.assertEquals("Россия", actual.getCountry().getName());
     }
 
     @Test
     @DisplayName("Неудачное создание - регион уже создан")
     void saveAlreadyExistsFailTest() {
+        UUID countryId = UUID.randomUUID();
         Mockito.when(regionRepository.exists(any(Specification.class))).thenReturn(true);
 
         RegionAlreadyExistsException actual = Assertions.assertThrows(
                 RegionAlreadyExistsException.class, () -> regionServiceImp.create(
-                        new CreateRegionDTO("Test Region", UUID.randomUUID())
+                        new CreateRegionDTO("Московская область", countryId)
                 )
         );
 
         Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
-        Assertions.assertEquals("Регион с указанным названием и страной уже создан", actual.getMessage());
+        Assertions.assertEquals(RegionAlreadyExistsException.getErrorText("Московская область", countryId), actual.getMessage());
     }
 
     @Test
@@ -103,11 +108,11 @@ class RegionServiceTest {
 
         CountryByIdNotFoundException actual = Assertions.assertThrows(
                 CountryByIdNotFoundException.class,
-                () -> regionServiceImp.create(new CreateRegionDTO("Test Country", countryId))
+                () -> regionServiceImp.create(new CreateRegionDTO("Филиппины", countryId))
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(countryId), actual.getMessage());
     }
 
     @Test
@@ -200,67 +205,73 @@ class RegionServiceTest {
     @Test
     @DisplayName("Неудачное обновление - регион не найден")
     void updateRegionNotFoundFailTest() {
+        UUID regionId = UUID.randomUUID();
+
         RegionByIdNotFoundException actual = Assertions.assertThrows(
                 RegionByIdNotFoundException.class,
-                () -> regionServiceImp.update(UUID.randomUUID(), new UpdateRegionDTO("Not Found Region", UUID.randomUUID()))
+                () -> regionServiceImp.update(regionId, new UpdateRegionDTO("Провинция Прованс", UUID.randomUUID()))
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Регион с указанным идентификатором не найден", actual.getMessage());
+        Assertions.assertEquals(RegionByIdNotFoundException.getErrorText(regionId), actual.getMessage());
     }
 
     @Test
     @DisplayName("Неудачное обновление - страна не найдена")
     void updateRegionCountryNotFoundFailTest() {
-        Country country = new Country("Test Country");
-        country.setId(UUID.randomUUID());
-
-        Region region = new Region("Test Region", country);
-        region.setId(UUID.randomUUID());
-
         UUID countryId = UUID.randomUUID();
+        UUID regionId = UUID.randomUUID();
 
-        Mockito.when(regionRepository.findById(region.getId())).thenReturn(Optional.of(region));
+        Country country = new Country("Россия");
+        country.setId(countryId);
+
+        Region region = new Region("Челябинская область", country);
+        region.setId(regionId);
+
+        Mockito.when(regionRepository.findById(regionId)).thenReturn(Optional.of(region));
         Mockito.when(countryRepository.findById(countryId)).thenReturn(Optional.empty());
 
         CountryByIdNotFoundException actual = Assertions.assertThrows(
                 CountryByIdNotFoundException.class,
-                () -> regionServiceImp.update(region.getId(), new UpdateRegionDTO(null, countryId))
+                () -> regionServiceImp.update(regionId, new UpdateRegionDTO(null, countryId))
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Страна с указанным идентификатором не найдена", actual.getMessage());
+        Assertions.assertEquals(CountryByIdNotFoundException.getErrorText(countryId), actual.getMessage());
     }
 
     @Test
     @DisplayName("Неудачное обновление - регион уже создан")
     void updateAlreadyExistsFailTest() {
+        UUID countryId = UUID.randomUUID();
+        UUID regionId = UUID.randomUUID();
+
+        Country country = new Country("Россия");
+        country.setId(countryId);
+
+        Region region = new Region("Курганская область", country);
+        region.setId(regionId);
+
         Mockito.when(regionRepository.findById(any(UUID.class)))
-                .thenReturn(
-                        Optional.of(
-                                new Region("Test Region",
-                                        new Country("Test Country")
-                                )
-                        )
-                );
+                .thenReturn(Optional.of(region));
 
         Mockito.when(regionRepository.exists(any(Specification.class)))
                 .thenReturn(true);
 
         RegionAlreadyExistsException actual = Assertions.assertThrows(
                 RegionAlreadyExistsException.class,
-                () -> regionServiceImp.update(UUID.randomUUID(), new UpdateRegionDTO(null, null))
+                () -> regionServiceImp.update(regionId, new UpdateRegionDTO("Якутия", null))
         );
 
         Assertions.assertEquals(HttpStatus.CONFLICT, actual.getStatusCode());
-        Assertions.assertEquals("Регион с указанным названием и страной уже создан", actual.getMessage());
+        Assertions.assertEquals(RegionAlreadyExistsException.getErrorText("Якутия", countryId), actual.getMessage());
     }
 
     @Test
     @DisplayName("Удачное удаление")
     void deleteSuccessTest() {
         UUID regionId = UUID.randomUUID();
-        Region region = new Region("Region For Delete", new Country());
+        Region region = new Region("Псковская область", new Country());
         region.setId(regionId);
 
         Mockito.when(regionRepository.findById(regionId)).thenReturn(Optional.of(region));
@@ -283,14 +294,14 @@ class RegionServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Регион с указанным идентификатором не найден", actual.getMessage());
+        Assertions.assertEquals(RegionByIdNotFoundException.getErrorText(regionId), actual.getMessage());
     }
 
     @Test
     @DisplayName("Удачное получение по идентификатору")
     void findByIdSuccessTest() {
         UUID regionId = UUID.randomUUID();
-        Region region = new Region("Test Region", new Country());
+        Region region = new Region("Московская область", new Country());
         region.setId(regionId);
 
         Mockito.when(regionRepository.findById(regionId)).thenReturn(Optional.of(region));
@@ -298,7 +309,7 @@ class RegionServiceTest {
                 .thenReturn(
                         new RegionDetailsDTO(
                                 regionId,
-                                "Test Region",
+                                "Московская область",
                                 null,
                                 null
                         )
@@ -307,7 +318,7 @@ class RegionServiceTest {
         RegionDetailsDTO actual = regionServiceImp.getById(regionId);
 
         Assertions.assertEquals(regionId, actual.getId());
-        Assertions.assertEquals("Test Region", region.getName());
+        Assertions.assertEquals("Московская область", region.getName());
     }
 
     @Test
@@ -323,7 +334,7 @@ class RegionServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals("Регион с указанным идентификатором не найден", actual.getMessage());
+        Assertions.assertEquals(RegionByIdNotFoundException.getErrorText(regionId), actual.getMessage());
     }
 
 }

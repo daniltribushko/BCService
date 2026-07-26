@@ -1,6 +1,8 @@
 package ru.tdd.geo.application.models.exceptions.geo.locations;
 
-import ru.tdd.core.application.exceptions.NotFoundException;
+import ru.tdd.bc.http.NotFoundException;
+
+import java.util.UUID;
 
 /**
  * @author Tribushko Danil
@@ -8,7 +10,11 @@ import ru.tdd.core.application.exceptions.NotFoundException;
  */
 public class LocationByIdNotFoundException extends NotFoundException {
 
-    public LocationByIdNotFoundException() {
-        super("Локация с указанным идентификатором не найдена");
+    public LocationByIdNotFoundException(UUID id) {
+        super(getErrorText(id));
+    }
+
+    public static String getErrorText(UUID id) {
+        return "Локация с идентификатором: \"%s\" не найдена".formatted(id);
     }
 }

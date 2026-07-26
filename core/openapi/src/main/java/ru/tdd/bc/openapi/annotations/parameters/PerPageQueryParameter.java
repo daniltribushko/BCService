@@ -17,6 +17,6 @@ import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({PARAMETER, METHOD, FIELD, ANNOTATION_TYPE})
-@Parameter(name = "page", description = "Номер страницы с данными", in = ParameterIn.QUERY)
+@Parameter(name = "per_page", description = "Номер страницы с данными", in = ParameterIn.QUERY)
 public @interface PerPageQueryParameter {
 }

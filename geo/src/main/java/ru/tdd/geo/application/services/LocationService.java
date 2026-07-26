@@ -3,7 +3,7 @@ package ru.tdd.geo.application.services;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tdd.geo.application.models.dto.geo.location.CreateLocationDTO;
 import ru.tdd.geo.application.models.dto.geo.location.LocationDTO;
-import ru.tdd.geo.application.models.dto.geo.location.LocationsDTO;
+import ru.tdd.geo.application.models.dto.geo.location.LocationListData;
 import ru.tdd.geo.application.models.dto.geo.location.UpdateLocationDTO;
 
 import java.util.UUID;
@@ -27,5 +27,5 @@ public interface LocationService {
     @Transactional
     void delete(UUID id);
 
-    LocationsDTO getAll(String name, String cityName, int page, int perPage);
+    LocationListData getAll(String name, String cityName, String regionName, String countryName, int page, int perPage);
 }

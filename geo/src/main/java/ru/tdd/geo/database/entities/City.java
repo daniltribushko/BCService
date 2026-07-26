@@ -3,7 +3,8 @@ package ru.tdd.geo.database.entities;
 import jakarta.persistence.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import ru.tdd.core.database.entities.BaseEntity;
+import ru.tdd.bc.database.entity.BaseEntity;
+import ru.tdd.bc.database.entity.NameEntity;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -14,8 +15,8 @@ import java.util.Set;
  * Таблица города
  */
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"name", "region", "country"}))
-public class City extends BaseEntity implements BaseNameEntity {
+@Table(name = "city", uniqueConstraints = @UniqueConstraint(columnNames = {"name", "region", "country"}))
+public class City extends BaseEntity implements NameEntity {
 
     @Column(name = "name", nullable = false)
     private String name;
