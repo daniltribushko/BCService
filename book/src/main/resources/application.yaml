@@ -28,11 +28,11 @@ server:
     context-path: /api/v1
 springdoc:
   api-docs:
-    path: /docs
+    path: /books/docs
     enabled: true
   swagger-ui:
-    path: /docs/swagger-ui.html
+    path: /books/docs/swagger-ui.html
     disable-swagger-default-url: true
-    url: /docs
+    url: /books/docs
 jwt:
   secret: feuytbcewceut8Efq6c78tacrcFrRQQxafsddfcxasfdacffac

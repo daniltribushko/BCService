@@ -22,6 +22,8 @@ public class OpenApiConfig {
 
     public static final String COUNTRY_CONTROLLER = "Country Controller";
 
+    public static final String PUBLISHER_CONTROLLER = "Publisher Controller";
+
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
@@ -43,7 +45,10 @@ public class OpenApiConfig {
                                         .description("Контроллер для работы с авторами"),
                                 new Tag()
                                         .name(COUNTRY_CONTROLLER)
-                                        .description("Контроллер для работы со странами")
+                                        .description("Контроллер для работы со странами"),
+                                new Tag()
+                                        .name(PUBLISHER_CONTROLLER)
+                                        .description("Контроллер для работы с издателями")
                         )
                 );
     }

@@ -1,6 +1,7 @@
 package ru.tdd.bc.book.application.mappers;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.MappingConstants;
 import ru.tdd.bc.book.application.dto.countries.CountryDTO;
 import ru.tdd.bc.book.database.entities.Country;
 
@@ -11,7 +12,7 @@ import java.util.List;
  * @since 19.02.2026
  * Маппер стран
  */
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface CountryMapper {
 
     CountryDTO toDto(Country country);

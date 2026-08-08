@@ -1,6 +1,5 @@
 package ru.tdd.geo.integrations.controllers;
 
-import io.swagger.v3.oas.models.PathItem;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.bc.dto.ExceptionDto;
 import ru.tdd.bc.http.countries.CountryAlreadyExistsException;
@@ -27,24 +25,15 @@ import ru.tdd.geo.application.models.dto.geo.country.CountryDTO;
 import ru.tdd.geo.application.models.dto.geo.country.CountryListData;
 import ru.tdd.geo.application.models.dto.geo.country.CreateCountryDTO;
 import ru.tdd.geo.application.models.dto.geo.country.UpdateCountryDTO;
-import ru.tdd.geo.application.utils.URLUtils;
-import ru.tdd.geo.database.entities.Country;
 import ru.tdd.geo.sql.InitCountriesSqlScripts;
 import ru.tdd.geo.utils.CountryUtils;
 import ru.tdd.geo.utils.UserUtils;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * @author Tribushko Danil

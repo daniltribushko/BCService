@@ -1,6 +1,5 @@
 package ru.tdd.geo.integrations.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.bc.dto.ExceptionDto;
 import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
@@ -30,7 +28,6 @@ import ru.tdd.geo.application.models.exceptions.geo.cities.CityAlreadyExistExcep
 import ru.tdd.geo.application.models.exceptions.geo.cities.CityByIdNotFoundException;
 import ru.tdd.geo.application.models.exceptions.geo.region.RegionByIdNotFoundException;
 import ru.tdd.geo.application.utils.URLUtils;
-import ru.tdd.geo.database.repositories.CityRepository;
 import ru.tdd.geo.sql.InitCitiesSqlScrips;
 import ru.tdd.geo.utils.CityUtils;
 import ru.tdd.geo.utils.CountryUtils;
@@ -40,12 +37,8 @@ import ru.tdd.geo.utils.UserUtils;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * @author Tribushko Danil

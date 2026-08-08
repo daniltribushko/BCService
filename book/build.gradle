@@ -23,15 +23,15 @@ dependencies {
     implementation "com.google.protobuf:protobuf-java:4.35.0"
 
     //bc
-    implementation 'ru.tdd.bc:imp:1.1.1'
-    implementation 'ru.tdd.bc:database:1.1.1'
-    implementation 'ru.tdd.bc:security:1.1.1'
-    implementation 'ru.tdd.bc:exceptions:1.1.1'
-    implementation 'ru.tdd.bc:security:1.1.1'
-    implementation 'ru.tdd.bc:proto:1.1.1'
-    implementation 'ru.tdd.bc:kafka-core:1.1.1'
-    implementation 'ru.tdd.bc:openapi:1.1.1'
-    implementation 'ru.tdd.bc:redis:1.1.1'
+    implementation 'ru.tdd.bc:imp:1.1.2'
+    implementation 'ru.tdd.bc:database:1.1.2'
+    implementation 'ru.tdd.bc:security:1.1.2'
+    implementation 'ru.tdd.bc:exceptions:1.1.2'
+    implementation 'ru.tdd.bc:security:1.1.2'
+    implementation 'ru.tdd.bc:proto:1.1.2'
+    implementation 'ru.tdd.bc:kafka-core:1.1.2'
+    implementation 'ru.tdd.bc:openapi:1.1.2'
+    implementation 'ru.tdd.bc:redis:1.1.2'
 
     //jwt
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'

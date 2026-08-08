@@ -6,7 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ru.tdd.bc.book.TestcontainersConfiguration;
 import ru.tdd.bc.book.application.dto.countries.CountryDTO;
 import ru.tdd.bc.book.application.services.CountryService;
 import ru.tdd.bc.book.sql.InitCountriesSqlScripts;
@@ -16,6 +18,7 @@ import ru.tdd.bc.book.utils.CountryUtils;
 @Testcontainers
 @InitCountriesSqlScripts
 @DisplayName("Интеграционный тест сервиса стран")
+@Import(TestcontainersConfiguration.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class CountryServiceTest {
 

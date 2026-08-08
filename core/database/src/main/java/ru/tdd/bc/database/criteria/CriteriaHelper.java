@@ -89,6 +89,11 @@ public class CriteriaHelper<T> {
         return this;
     }
 
+    public CriteriaHelper<T> notEqual(String field, Object object) {
+        predicates.add(cb.notEqual(root.get(field), object));
+        return this;
+    }
+
     public CriteriaHelper<T> equal(Expression<String> field, Object text) {
         predicates.add(cb.equal(field, text));
         return this;

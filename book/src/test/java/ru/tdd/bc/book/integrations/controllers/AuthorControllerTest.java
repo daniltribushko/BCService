@@ -20,13 +20,13 @@ import ru.tdd.bc.book.application.dto.authors.AuthorListDTO;
 import ru.tdd.bc.book.application.dto.authors.CreateAuthorDTO;
 import ru.tdd.bc.book.application.dto.authors.UpdateAuthorDTO;
 import ru.tdd.bc.book.application.dto.countries.CountryDTO;
+import ru.tdd.bc.book.application.exceptions.AuthorByIdNotFoundException;
 import ru.tdd.bc.book.database.repositories.AuthorRepository;
 import ru.tdd.bc.book.sql.InitAuthorsSqlScripts;
 import ru.tdd.bc.book.utils.AuthorUtils;
 import ru.tdd.bc.book.utils.CountryUtils;
 import ru.tdd.bc.book.utils.UserUtils;
 import ru.tdd.bc.dto.ExceptionDto;
-import ru.tdd.bc.http.authors.AuthorByIdNotFoundException;
 import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
 import ru.tdd.bc.security.jwt.JwtService;
 import ru.tdd.bc.utils.UrlUtils;
@@ -305,7 +305,7 @@ public class AuthorControllerTest {
         ExceptionDto body = actual.getBody();
 
         Assertions.assertNotNull(body);
-        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(authorId), body.getMessage());
+        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(), body.getMessage());
     }
 
     @Test
@@ -410,7 +410,7 @@ public class AuthorControllerTest {
         ExceptionDto body = actual.getBody();
 
         Assertions.assertNotNull(body);
-        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(authorId), body.getMessage());
+        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(), body.getMessage());
     }
 
     @Test
@@ -460,7 +460,7 @@ public class AuthorControllerTest {
         ExceptionDto body = actual.getBody();
 
         Assertions.assertNotNull(body);
-        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(authorId), body.getMessage());
+        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(), body.getMessage());
     }
 
     @Test

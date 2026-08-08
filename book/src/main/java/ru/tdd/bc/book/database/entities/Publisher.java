@@ -1,6 +1,9 @@
 package ru.tdd.bc.book.database.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.URL;
 import ru.tdd.bc.database.entity.EntityVersion;
 
 import java.time.LocalDateTime;
@@ -13,17 +16,20 @@ import java.util.UUID;
  * Издатель книги
  */
 @Entity
-@Table(name = "publisher")
+@Table(name = "publisher", uniqueConstraints = @UniqueConstraint(columnNames = {"name", "country_id"}))
 public class Publisher extends EntityVersion {
 
+    @NotBlank
     @Column(name = "name", nullable = false)
     private String name;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "country")
+    @JoinColumn(name = "country_id", nullable = false)
     private Country country;
 
-    @Column(name = "url", nullable = false)
+    @URL
+    @Column(name = "url")
     private String url;
 
     public static Builder builder() {
@@ -40,7 +46,7 @@ public class Publisher extends EntityVersion {
 
         private String url;
 
-        private LocalDateTime updateTime;
+        private LocalDateTime updateTime = LocalDateTime.now();
 
         public Builder id(UUID id) {
             this.id = id;
@@ -59,6 +65,11 @@ public class Publisher extends EntityVersion {
 
         public Builder url(String url) {
             this.url = url;
+            return this;
+        }
+
+        public Builder updateTime(LocalDateTime updateTime) {
+            this.updateTime = updateTime;
             return this;
         }
 

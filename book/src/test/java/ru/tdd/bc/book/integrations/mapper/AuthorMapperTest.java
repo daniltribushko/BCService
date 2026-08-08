@@ -4,7 +4,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import ru.tdd.bc.book.TestcontainersConfiguration;
 import ru.tdd.bc.book.application.dto.authors.AuthorDTO;
 import ru.tdd.bc.book.application.dto.authors.AuthorDetailsDTO;
 import ru.tdd.bc.book.application.mappers.AuthorMapper;
@@ -21,7 +25,10 @@ import java.util.UUID;
  * Набор тестов маппера авторов
  */
 @SpringBootTest
+@Testcontainers
+@Import(TestcontainersConfiguration.class)
 @DisplayName("Тестирование маппера авторов")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class AuthorMapperTest {
 
     private final AuthorMapper authorMapper;

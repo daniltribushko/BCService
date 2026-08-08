@@ -18,13 +18,13 @@ import ru.tdd.bc.book.application.dto.authors.AuthorDetailsDTO;
 import ru.tdd.bc.book.application.dto.authors.CreateAuthorDTO;
 import ru.tdd.bc.book.application.dto.authors.UpdateAuthorDTO;
 import ru.tdd.bc.book.application.dto.countries.CountryDTO;
+import ru.tdd.bc.book.application.exceptions.AuthorByIdNotFoundException;
 import ru.tdd.bc.book.application.services.AuthorService;
 import ru.tdd.bc.book.database.repositories.AuthorRepository;
 import ru.tdd.bc.book.database.repositories.CountryRepository;
 import ru.tdd.bc.book.sql.InitAuthorsSqlScripts;
 import ru.tdd.bc.book.utils.AuthorUtils;
 import ru.tdd.bc.book.utils.CountryUtils;
-import ru.tdd.bc.http.authors.AuthorByIdNotFoundException;
 import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
 
 import java.util.UUID;
@@ -164,7 +164,7 @@ public class AuthorServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(authorId), actual.getMessage());
+        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(), actual.getMessage());
     }
 
     @Test
@@ -208,7 +208,7 @@ public class AuthorServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(authorId), actual.getMessage());
+        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(), actual.getMessage());
     }
 
     @Test
@@ -230,6 +230,6 @@ public class AuthorServiceTest {
         );
 
         Assertions.assertEquals(HttpStatus.NOT_FOUND, actual.getStatusCode());
-        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(authorId), actual.getMessage());
+        Assertions.assertEquals(AuthorByIdNotFoundException.getErrorText(), actual.getMessage());
     }
 }

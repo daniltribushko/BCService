@@ -1,12 +1,11 @@
 package ru.tdd.bc.book.integrations.mapper;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import ru.tdd.bc.book.application.dto.countries.CountryDTO;
-import ru.tdd.bc.book.application.mappers.CountryMapper;
+import ru.tdd.bc.book.application.mappers.CountryMapperImpl;
 import ru.tdd.bc.book.database.entities.Country;
 
 import java.util.UUID;
@@ -16,15 +15,14 @@ import java.util.UUID;
  * @since 22.02.2026
  * Набор тестов маппера стран
  */
-@SpringBootTest
 @DisplayName("Тестирование маппера стран")
 class CountryMapperTest {
 
-    private CountryMapper countryMapper;
+    private CountryMapperImpl countryMapper;
 
-    @Autowired
-    public CountryMapperTest(CountryMapper countryMapper) {
-        this.countryMapper = countryMapper;
+    @BeforeEach
+    void setMapper() {
+        countryMapper = new CountryMapperImpl();
     }
 
     @Test

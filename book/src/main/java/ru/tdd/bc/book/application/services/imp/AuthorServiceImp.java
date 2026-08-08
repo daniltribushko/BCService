@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tdd.bc.book.application.dto.authors.*;
+import ru.tdd.bc.book.application.exceptions.AuthorByIdNotFoundException;
 import ru.tdd.bc.book.application.mappers.AuthorMapper;
 import ru.tdd.bc.book.application.redis.CountryRedisService;
 import ru.tdd.bc.book.application.services.AuthorService;
@@ -13,7 +14,6 @@ import ru.tdd.bc.book.database.entities.Author;
 import ru.tdd.bc.book.database.entities.Country;
 import ru.tdd.bc.book.database.repositories.AuthorRepository;
 import ru.tdd.bc.book.database.specifications.AuthorSpecification;
-import ru.tdd.bc.http.authors.AuthorByIdNotFoundException;
 import ru.tdd.bc.utils.TextUtils;
 
 import java.time.LocalDateTime;
@@ -68,7 +68,7 @@ public class AuthorServiceImp implements AuthorService {
     @Transactional
     public AuthorDTO update(UUID id, UpdateAuthorDTO dto) {
 
-        Author author = authorRepository.findById(id).orElseThrow(() -> new AuthorByIdNotFoundException(id));
+        Author author = authorRepository.findById(id).orElseThrow(AuthorByIdNotFoundException::new);
 
         boolean isUpdate = false;
 
@@ -107,7 +107,7 @@ public class AuthorServiceImp implements AuthorService {
     @Override
     public AuthorDetailsDTO getById(UUID id) {
         Author author = authorRepository.findById(id)
-                .orElseThrow(() -> new AuthorByIdNotFoundException(id));
+                .orElseThrow(AuthorByIdNotFoundException::new);
         return authorMapper.toDetailsDto(author);
     }
 
@@ -116,7 +116,7 @@ public class AuthorServiceImp implements AuthorService {
     public void delete(UUID id) {
         authorRepository.delete(
                 authorRepository.findById(id)
-                        .orElseThrow(() -> new AuthorByIdNotFoundException(id))
+                        .orElseThrow(AuthorByIdNotFoundException::new)
         );
     }
 
