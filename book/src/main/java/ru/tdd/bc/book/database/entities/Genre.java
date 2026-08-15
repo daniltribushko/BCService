@@ -1,36 +1,40 @@
 package ru.tdd.bc.book.database.entities;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import ru.tdd.bc.dictionaries.entities.NameEntity;
-import ru.tdd.kafka_core.entities.KafkaEntity;
+import ru.tdd.bc.database.entity.BaseEntity;
+import ru.tdd.bc.dictionaries.Dictionary;
 
 import java.util.UUID;
 
 /**
  * @author Tribushko Danil
- * @since 18.02.2026
- * Модель страны
+ * @since 08.08.2026
+ * Жанр книг
  */
 @Entity
-@Table(name = "country")
-public class Country extends KafkaEntity implements NameEntity {
+@Table(name = "genre")
+public class Genre extends BaseEntity implements Dictionary {
 
-    @Column(name = "name")
     private String name;
 
-    public Country() {}
+    public Genre() {}
 
-    public Country(UUID id, String name) {
+    public Genre(String name) {
+        this.name = name;
+    }
+
+    public Genre(UUID id, String name) {
         this.id = id;
         this.name = name;
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = name;
     }

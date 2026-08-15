@@ -1,0 +1,29 @@
+package ru.tdd.bc.book.utils;
+
+import java.util.UUID;
+
+/**
+ * @author Tribushko Danil
+ * @since 11.08.2026
+ * Набор утилит для работы с жанрами
+ */
+public class GenreUtils {
+
+    private GenreUtils() {}
+
+    public static final UUID GENRE_ID1 = UUID.fromString("e7be2b3a-f1b3-4ce9-827c-9490cc6220d3");
+
+    public static final UUID GENRE_ID2 = UUID.fromString("c67b5e1c-aa3f-4a7e-86b6-362c84768fa3");
+
+    public static final UUID GENRE_ID3 = UUID.fromString("27e97562-f87f-4870-86f0-9188476423c1");
+
+    public static final UUID GENRE_ID4 = UUID.fromString("41319bb0-98d5-474f-ae1a-bdb88a8c0e03");
+
+    public static final UUID GENRE_ID5 = UUID.fromString("563688d6-37f5-48f5-ac4d-b08de716af78");
+
+    public static final UUID GENRE_ID6 = UUID.fromString("ee14263d-7ed3-4f9c-8995-347fcfe9118f");
+
+    public static final UUID GENRE_ID7 = UUID.fromString("4290e25b-728e-4ca0-87a5-a63a4952cf01");
+
+    public static final UUID GENRE_ID8 = UUID.fromString("b2c0d826-7e64-47ce-8af0-92a33b57df03");
+}

@@ -3,6 +3,7 @@ package ru.tdd.bc.dictionaries.services;
 import ru.tdd.bc.dictionaries.dto.CreateDictionaryDto;
 import ru.tdd.bc.dictionaries.dto.DictionariesListDataDto;
 import ru.tdd.bc.dictionaries.dto.DictionaryDto;
+import ru.tdd.bc.dictionaries.dto.UpdateDictionaryDto;
 
 import java.util.UUID;
 
@@ -15,9 +16,11 @@ public interface DictionaryService {
 
     DictionaryDto create(CreateDictionaryDto dto);
 
-    DictionaryDto update(UUID id, DictionaryDto dto);
+    DictionaryDto update(UUID id, UpdateDictionaryDto dto);
 
     DictionaryDto getById(UUID id);
+
+    void delete(UUID id);
 
     DictionariesListDataDto getAll(String name, int page, int perPage);
 }

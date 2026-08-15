@@ -1,8 +1,8 @@
 package ru.tdd.bc.database.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import ru.tdd.bc.database.entity.NameEntity;
-import ru.tdd.bc.utils.TextUtils;
+import ru.tdd.bc.database.criteria.CriteriaHelper;
+import ru.tdd.bc.dictionaries.entities.NameEntity;
 
 /**
  * @author Tribushko Danil
@@ -16,12 +16,7 @@ public interface NameSpecification {
      */
     static <T extends NameEntity> Specification<T> byNameWithFullTextSearch(String name) {
         return (root, cr, cb) ->
-                TextUtils.isEmpty(name) ?
-                        cb.conjunction() :
-                        cb.like(
-                                cb.lower(root.get("name")),
-                                "%" + name.toLowerCase() + "%"
-                        );
+                new CriteriaHelper<>(root, cr, cb).like("name", name).buildOne();
     }
 
     /**
@@ -29,9 +24,6 @@ public interface NameSpecification {
      */
     static <T extends NameEntity> Specification<T> byNameEqual(String name) {
         return (root, cr, cb) ->
-                cb.equal(
-                        cb.lower(root.get("name")),
-                        name.toLowerCase()
-                );
+                new CriteriaHelper<>(root, cr, cb).lowerEqual("name", name).buildOne();
     }
 }

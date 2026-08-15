@@ -1,4 +1,4 @@
-package ru.tdd.bc.database.entity;
+package ru.tdd.bc.dictionaries.entities;
 
 /**
  * @author Tribushko Danil

@@ -23,4 +23,16 @@ public class DictionariesListDataDto extends ListData<DictionaryDto> {
     ) {
         super(data, totalPages, totalCount, count, page);
     }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends ListData.Builder<DictionariesListDataDto, DictionaryDto> {
+
+        @Override
+        public DictionariesListDataDto build() {
+            return build(new DictionariesListDataDto());
+        }
+    }
 }

@@ -1,5 +1,7 @@
 package ru.tdd.bc.dictionaries;
 
+import ru.tdd.bc.dictionaries.entities.NameEntity;
+
 import java.util.UUID;
 
 /**
@@ -7,7 +9,7 @@ import java.util.UUID;
  * @since 11.06.2026
  * Модель справочника
  */
-public interface Dictionary {
+public interface Dictionary extends NameEntity {
 
     UUID getId();
 
