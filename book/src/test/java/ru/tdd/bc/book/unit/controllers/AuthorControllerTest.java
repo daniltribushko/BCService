@@ -13,7 +13,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import ru.tdd.bc.book.application.dto.authors.AuthorDTO;
-import ru.tdd.bc.book.application.dto.authors.AuthorDetailsDTO;
 import ru.tdd.bc.book.application.dto.authors.CreateAuthorDTO;
 import ru.tdd.bc.book.application.dto.authors.UpdateAuthorDTO;
 import ru.tdd.bc.book.application.dto.countries.CountryDTO;
@@ -25,6 +24,7 @@ import ru.tdd.bc.controller.ApiExceptionControllerAdvice;
 import ru.tdd.bc.controller.ValidationControllerAdvice;
 import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.is;
@@ -76,7 +76,10 @@ class AuthorControllerTest {
                                 "Иванов",
                                 "Иванович",
                                 "Иван",
-                                new CountryDTO(countryId, "Россия")
+                                new CountryDTO(countryId, "Россия"),
+                                null,
+                                null,
+                                null
                         )
                 );
 
@@ -89,7 +92,8 @@ class AuthorControllerTest {
                                                         "Иванов",
                                                         "Иванович",
                                                         "Иван",
-                                                        countryId
+                                                        countryId,
+                                                        null
                                                 )
                                         )
                                 )
@@ -139,7 +143,8 @@ class AuthorControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                                 .content(
                                         objectMapper.writeValueAsBytes(
-                                                new CreateAuthorDTO("Иванов", null, "Иван", countryId))
+                                                new CreateAuthorDTO("Иванов", null, "Иван", countryId, null)
+                                        )
                                 )
                 ).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message", is(CountryByIdNotFoundException.getErrorText(countryId))));
@@ -158,7 +163,10 @@ class AuthorControllerTest {
                                 "Иванов",
                                 "Иванович",
                                 "Иван",
-                                new CountryDTO(countryId, "Россия")
+                                new CountryDTO(countryId, "Россия"),
+                                LocalDate.of(1999, 1, 1),
+                                null,
+                                null
                         )
                 );
 
@@ -171,7 +179,8 @@ class AuthorControllerTest {
                                                         "Иванов",
                                                         "Иванович",
                                                         "Иван",
-                                                        countryId
+                                                        countryId,
+                                                        null
                                                 )
                                         )
                                 )
@@ -212,7 +221,7 @@ class AuthorControllerTest {
         mockMvc.perform(
                         put(BASE_URL + "/" + authorId)
                                 .contentType(MediaType.APPLICATION_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(new UpdateAuthorDTO(null, null, null, countryId)))
+                                .content(objectMapper.writeValueAsString(new UpdateAuthorDTO(null, null, null, countryId, null)))
                 )
                 .andExpect(jsonPath("$.message", is(CountryByIdNotFoundException.getErrorText(countryId))));
     }
@@ -224,12 +233,13 @@ class AuthorControllerTest {
 
         Mockito.when(authorService.getById(authorId))
                 .thenReturn(
-                        new AuthorDetailsDTO(
+                        new AuthorDTO(
                                 authorId,
                                 "Иванов",
                                 "Иванович",
                                 "Иван",
                                 new CountryDTO(CountryUtils.COUNTRY_ID1, null),
+                                LocalDate.of(1999, 1, 1),
                                 null,
                                 null
                         )

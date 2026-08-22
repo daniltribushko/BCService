@@ -10,7 +10,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import ru.tdd.bc.book.application.dto.authors.AuthorDTO;
-import ru.tdd.bc.book.application.dto.authors.AuthorDetailsDTO;
 import ru.tdd.bc.book.application.dto.authors.CreateAuthorDTO;
 import ru.tdd.bc.book.application.dto.authors.UpdateAuthorDTO;
 import ru.tdd.bc.book.application.dto.countries.CountryDTO;
@@ -22,6 +21,7 @@ import ru.tdd.bc.book.database.entities.Author;
 import ru.tdd.bc.book.database.entities.Country;
 import ru.tdd.bc.book.database.repositories.AuthorRepository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -62,7 +62,10 @@ class AuthorServiceTest {
                         "Попов",
                         null,
                         "Дмитрий",
-                        new CountryDTO(countryId, "Россия")
+                        new CountryDTO(countryId, "Россия"),
+                        LocalDate.of(2000, 1, 1),
+                        null,
+                        null
                 )
         );
 
@@ -71,7 +74,8 @@ class AuthorServiceTest {
                         "Попов",
                         null,
                         "Дмитрий",
-                        countryId
+                        countryId,
+                        null
                 )
         );
 
@@ -93,7 +97,8 @@ class AuthorServiceTest {
                 "Иванов",
                 "Иванович",
                 "Иван",
-                country
+                country,
+                null
         );
 
         Mockito.when(countryService.get(any(UUID.class))).thenReturn(country);
@@ -104,7 +109,10 @@ class AuthorServiceTest {
                         "Попов",
                         null,
                         "Дмитрий",
-                        countryDTO
+                        countryDTO,
+                        LocalDate.of(2000, 1, 1),
+                        null,
+                        null
                 )
         );
 
@@ -114,7 +122,8 @@ class AuthorServiceTest {
                         "Попов",
                         null,
                         "Дмитрий",
-                        UUID.randomUUID()
+                        UUID.randomUUID(),
+                        null
                 )
         );
 
@@ -149,24 +158,26 @@ class AuthorServiceTest {
                 "Иванов",
                 null,
                 "Иван",
-                country
+                country,
+                null
         );
 
         Mockito.when(authorRepository.findById(authorId)).thenReturn(Optional.of(author));
         Mockito.when(authorMapper.toDetailsDto(any(Author.class)))
                 .thenReturn(
-                        new AuthorDetailsDTO(
+                        new AuthorDTO(
                                 authorId,
                                 "Иванов",
                                 null,
                                 "Иван",
+                                null,
                                 null,
                                 LocalDateTime.now(),
                                 LocalDateTime.now()
                         )
                 );
 
-        AuthorDetailsDTO actual = authorService.getById(authorId);
+        AuthorDTO actual = authorService.getById(authorId);
 
         Assertions.assertEquals(authorId, actual.getId());
         Assertions.assertEquals("Иванов", actual.getLastName());
@@ -200,7 +211,8 @@ class AuthorServiceTest {
                 "Иванов",
                 "Иванович",
                 "Иван",
-                new Country()
+                new Country(),
+                null
         );
 
         Mockito.when(authorRepository.findById(authorId)).thenReturn(Optional.of(author));

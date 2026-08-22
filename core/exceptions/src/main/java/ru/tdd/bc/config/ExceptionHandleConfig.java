@@ -1,7 +1,5 @@
 package ru.tdd.bc.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import ru.tdd.bc.controller.ApiExceptionControllerAdvice;
@@ -15,9 +13,6 @@ import ru.tdd.bc.controller.ValidationControllerAdvice;
 @Configuration
 public class ExceptionHandleConfig {
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @Bean
     public ApiExceptionControllerAdvice controllerAdvice() {
         return new ApiExceptionControllerAdvice();
@@ -25,6 +20,6 @@ public class ExceptionHandleConfig {
 
     @Bean
     public ValidationControllerAdvice validationControllerAdvice() {
-        return new ValidationControllerAdvice(objectMapper);
+        return new ValidationControllerAdvice();
     }
 }

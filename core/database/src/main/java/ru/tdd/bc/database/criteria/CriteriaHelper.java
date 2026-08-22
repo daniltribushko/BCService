@@ -3,6 +3,7 @@ package ru.tdd.bc.database.criteria;
 import jakarta.persistence.criteria.*;
 import ru.tdd.bc.utils.TextUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,6 +67,17 @@ public class CriteriaHelper<T> {
         return this;
     }
 
+    public CriteriaHelper<T> inDateRange(String field, LocalDate start, LocalDate end) {
+        if (start != null && end != null)
+            predicates.add(cb.between(root.get(field), start, end));
+        else if (start != null)
+            predicates.add(cb.greaterThanOrEqualTo(root.get(field), start));
+        else if (end != null)
+            predicates.add(cb.lessThanOrEqualTo(root.get(field), end));
+
+        return this;
+    }
+
     public CriteriaHelper<T> or(Predicate[] _predicates) {
         predicates.add(cb.or(_predicates));
         return this;
@@ -101,6 +113,11 @@ public class CriteriaHelper<T> {
 
     public CriteriaHelper<T> predicate(Predicate... _predicates) {
         predicates.addAll(Arrays.stream(_predicates).toList());
+        return this;
+    }
+
+    public CriteriaHelper<T> isNull(String fieldName) {
+        predicates.add(cb.isNull(root.get(fieldName)));
         return this;
     }
 

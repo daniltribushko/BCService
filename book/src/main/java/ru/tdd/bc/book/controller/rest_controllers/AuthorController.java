@@ -16,10 +16,13 @@ import ru.tdd.bc.book.application.dto.authors.*;
 import ru.tdd.bc.book.controller.configs.OpenApiConfig;
 import ru.tdd.bc.book.controller.open_api.annotations.AuthorFioQueryParameter;
 import ru.tdd.bc.book.controller.open_api.annotations.CountryNameQueryParameter;
+import ru.tdd.bc.book.controller.open_api.annotations.EndBirthdayQueryParameter;
+import ru.tdd.bc.book.controller.open_api.annotations.StartBirthdayQueryParameter;
 import ru.tdd.bc.dto.ExceptionDto;
 import ru.tdd.bc.openapi.annotations.author.AuthorIdPathParameter;
 import ru.tdd.bc.openapi.annotations.parameters.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -86,7 +89,7 @@ public interface AuthorController {
                             responseCode = "200", description = "Автор получен",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = AuthorDetailsDTO.class)
+                                    schema = @Schema(implementation = AuthorDTO.class)
                             )
                     ),
                     @ApiResponse(
@@ -100,7 +103,7 @@ public interface AuthorController {
     )
     @Secured("ROLE_USER")
     @GetMapping("/{authorId}")
-    ResponseEntity<AuthorDetailsDTO> getById(@PathVariable(name = "authorId") @AuthorIdPathParameter UUID authorId);
+    ResponseEntity<AuthorDTO> getById(@PathVariable(name = "authorId") @AuthorIdPathParameter UUID authorId);
 
     @Operation(summary = "Delete", description = "Удаление пользователя, доступно только для администратора")
     @ApiResponses(
@@ -121,11 +124,11 @@ public interface AuthorController {
     @DeleteMapping("/{authorId}")
     ResponseEntity<?> delete(@PathVariable(name = "authorId") @AuthorIdPathParameter UUID authorId);
 
-    @Operation(summary = "Get All", description = "Получение списка авторов")
+    @Operation(summary = "Get All Details", description = "Получение списка авторов с подробной информацией")
     @ApiResponses(
             value = {
                     @ApiResponse(
-                            responseCode = "200", description = "Авторы получены",
+                            responseCode = "200", description = "Авторы успешно получены",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(implementation = AuthorListDTO.class)
@@ -142,35 +145,12 @@ public interface AuthorController {
             @CountryNameQueryParameter
             @RequestParam(name = "country_name", required = false)
             String countryName,
-            @PageQueryParameter
-            @RequestParam(name = "page", required = false, defaultValue = "0")
-            int page,
-            @PerPageQueryParameter
-            @RequestParam(name = "per_page", required = false, defaultValue = "100")
-            int perPage
-    );
-
-    @Operation(summary = "Get All Details", description = "Получение списка авторов с подробной информацией")
-    @ApiResponses(
-            value = {
-                    @ApiResponse(
-                            responseCode = "200", description = "Авторы успешно получены",
-                            content = @Content(
-                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                    schema = @Schema(implementation = AuthorDetailsListDTO.class)
-                            )
-                    )
-            }
-    )
-    @Secured("ROLE_ADMIN")
-    @GetMapping("/details")
-    ResponseEntity<AuthorDetailsListDTO> getAllDetails(
-            @AuthorFioQueryParameter
-            @RequestParam(name = "fio", required = false)
-            String fio,
-            @CountryNameQueryParameter
-            @RequestParam(name = "country_name", required = false)
-            String countryName,
+            @StartBirthdayQueryParameter
+            @RequestParam(name = "start_birthday", required = false)
+            LocalDate startBirthday,
+            @EndBirthdayQueryParameter
+            @RequestParam(name = "end_birthday", required = false)
+            LocalDate endBirthday,
             @StartCreationTimeQueryParameter
             @RequestParam(name = "creation_time_start", required = false)
             LocalDateTime creationTimeStart,

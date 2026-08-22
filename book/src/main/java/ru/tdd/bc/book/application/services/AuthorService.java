@@ -1,7 +1,11 @@
 package ru.tdd.bc.book.application.services;
 
-import ru.tdd.bc.book.application.dto.authors.*;
+import ru.tdd.bc.book.application.dto.authors.AuthorDTO;
+import ru.tdd.bc.book.application.dto.authors.AuthorListDTO;
+import ru.tdd.bc.book.application.dto.authors.CreateAuthorDTO;
+import ru.tdd.bc.book.application.dto.authors.UpdateAuthorDTO;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -16,15 +20,15 @@ public interface AuthorService {
 
     AuthorDTO update(UUID id, UpdateAuthorDTO dto);
 
-    AuthorDetailsDTO getById(UUID id);
+    AuthorDTO getById(UUID id);
 
     void delete(UUID id);
 
-    AuthorListDTO getAll(String fio, String countryName, int page, int perPage);
-
-    AuthorDetailsListDTO getAllDetails(
+    AuthorListDTO getAll(
             String fio,
             String countryName,
+            LocalDate startBirthday,
+            LocalDate endBirthday,
             LocalDateTime creationTimeStart,
             LocalDateTime creationTimeEnd,
             LocalDateTime updateTimeStart,

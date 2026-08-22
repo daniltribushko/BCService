@@ -1,9 +1,10 @@
 package ru.tdd.bc.book.application.mappers;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import ru.tdd.bc.book.application.dto.authors.AuthorDTO;
-import ru.tdd.bc.book.application.dto.authors.AuthorDetailsDTO;
+import ru.tdd.bc.book.application.dto.authors.CreateAuthorDTO;
 import ru.tdd.bc.book.database.entities.Author;
 
 /**
@@ -14,9 +15,13 @@ import ru.tdd.bc.book.database.entities.Author;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {CountryMapper.class})
 public interface AuthorMapper {
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "country", ignore = true)
+    Author toEntity(CreateAuthorDTO dto);
+
     AuthorDTO toDto(Author author);
 
-    AuthorDetailsDTO toDetailsDto(Author author);
+    AuthorDTO toDetailsDto(Author author);
 
 }
 

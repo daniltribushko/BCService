@@ -3,7 +3,9 @@ package ru.tdd.bc.book.application.dto.authors;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -52,13 +54,23 @@ public class CreateAuthorDTO {
     @NotNull(message = "Необходимо указать идентификатор старны автора")
     private UUID countryId;
 
+    @Schema(
+            name = "birthday",
+            description = "Дата рождения пользователя",
+            type = "string",
+            format = "date"
+    )
+    @Past(message = "Дата рождения автора должна быть в прошедшем времени")
+    private LocalDate birthday;
+
     public CreateAuthorDTO() {}
 
-    public CreateAuthorDTO(String lastName, String middleName, String firstName, UUID countryId) {
+    public CreateAuthorDTO(String lastName, String middleName, String firstName, UUID countryId, LocalDate birthday) {
         this.lastName = lastName;
         this.middleName = middleName;
         this.firstName = firstName;
         this.countryId = countryId;
+        this.birthday = birthday;
     }
 
     public String getLastName() {
@@ -91,5 +103,13 @@ public class CreateAuthorDTO {
 
     public void setCountryId(UUID countryId) {
         this.countryId = countryId;
+    }
+
+    public LocalDate getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(LocalDate birthday) {
+        this.birthday = birthday;
     }
 }

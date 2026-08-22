@@ -31,6 +31,7 @@ import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
 import ru.tdd.bc.security.jwt.JwtService;
 import ru.tdd.bc.utils.UrlUtils;
 
+import java.time.LocalDate;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -77,7 +78,8 @@ public class AuthorControllerTest {
                 "Пикуль",
                 "Саввич",
                 "Валентин",
-                CountryUtils.COUNTRY_ID1
+                CountryUtils.COUNTRY_ID1,
+                LocalDate.of(1928, 7, 13)
         );
 
         HttpEntity<CreateAuthorDTO> httpEntity = new HttpEntity<>(dto, headers);
@@ -116,7 +118,8 @@ public class AuthorControllerTest {
                 "Иван",
                 "Иванович",
                 "Иван",
-                countryId
+                countryId,
+                LocalDate.of(1999, 1, 1)
         );
 
         HttpEntity<CreateAuthorDTO> httpEntity = new HttpEntity<>(dto, headers);
@@ -141,15 +144,19 @@ public class AuthorControllerTest {
                 arguments(
                         named(
                                 "Не заполнена фамилия",
-                                new CreateAuthorDTO(null, null, "Иван", UUID.randomUUID())
+                                new CreateAuthorDTO(null, null, "Иван", UUID.randomUUID(), LocalDate.of(1999, 1, 1))
                         ),
                         named(
                                 "Не заполнено имя",
-                                new CreateAuthorDTO("Иванов", null, "", UUID.randomUUID())
+                                new CreateAuthorDTO("Иванов", null, "", UUID.randomUUID(), null)
                         ),
                         named(
                                 "Не заполнен идентификатор страны",
-                                new CreateAuthorDTO("Иванов", null, "Иван", null)
+                                new CreateAuthorDTO("Иванов", null, "Иван", null, null)
+                        ),
+                        named(
+                                "Невалидная дата",
+                                new CreateAuthorDTO("Иванов", null, "Иван", CountryUtils.COUNTRY_ID1, LocalDate.of(2999, 1, 1))
                         )
                 )
         );
@@ -182,7 +189,7 @@ public class AuthorControllerTest {
     void saveUserNotAdminFailTest() {
         String token = jwtService.generateToken(UserUtils.USER, secretKey);
 
-        CreateAuthorDTO dto = new CreateAuthorDTO("Иванов", null, "Иван", UUID.randomUUID());
+        CreateAuthorDTO dto = new CreateAuthorDTO("Иванов", null, "Иван", UUID.randomUUID(), null);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -204,46 +211,58 @@ public class AuthorControllerTest {
         return Stream.of(
                 arguments(
                         named("Обновление фамилии", AuthorUtils.AUTHOR_ID1),
-                        new UpdateAuthorDTO("Попов", "Сергеевич", null, null),
+                        new UpdateAuthorDTO("Попов", "Сергеевич", null, null, null),
                         new AuthorDTO(
                                 AuthorUtils.AUTHOR_ID1,
                                 "Попов",
                                 "Сергеевич",
                                 "Александр",
-                                new CountryDTO(CountryUtils.COUNTRY_ID1, null)
+                                new CountryDTO(CountryUtils.COUNTRY_ID1, null),
+                                LocalDate.of(1799, 6, 6),
+                                null,
+                                null
                         )
                 ),
                 arguments(
                         named("Обновление отчества", AuthorUtils.AUTHOR_ID2),
-                        new UpdateAuthorDTO(null, "Дмитриевич", null, null),
+                        new UpdateAuthorDTO(null, "Дмитриевич", null, null, null),
                         new AuthorDTO(
                                 AuthorUtils.AUTHOR_ID2,
                                 "Достоевский",
                                 "Дмитриевич",
                                 "Фёдор",
-                                new CountryDTO(CountryUtils.COUNTRY_ID1, null)
+                                new CountryDTO(CountryUtils.COUNTRY_ID1, null),
+                                LocalDate.of(1821, 11, 11),
+                                null,
+                                null
                         )
                 ),
                 arguments(
                         named("Обновление имени", AuthorUtils.AUTHOR_ID3),
-                        new UpdateAuthorDTO(null, "Павлович", "Фёдор", null),
+                        new UpdateAuthorDTO(null, "Павлович", "Фёдор", null, null),
                         new AuthorDTO(
                                 AuthorUtils.AUTHOR_ID3,
                                 "Чехов",
                                 "Павлович",
                                 "Фёдор",
-                                new CountryDTO(CountryUtils.COUNTRY_ID1, null)
+                                new CountryDTO(CountryUtils.COUNTRY_ID1, null),
+                                LocalDate.of(1860, 1, 29),
+                                null,
+                                null
                         )
                 ),
                 arguments(
                         named("Обновление страны", AuthorUtils.AUTHOR_ID7),
-                        new UpdateAuthorDTO(null, null, null, CountryUtils.COUNTRY_ID2),
+                        new UpdateAuthorDTO(null, null, null, CountryUtils.COUNTRY_ID2, null),
                         new AuthorDTO(
                                 AuthorUtils.AUTHOR_ID7,
                                 "Мураками",
                                 null,
                                 "Харуки",
-                                new CountryDTO(CountryUtils.COUNTRY_ID2, null)
+                                new CountryDTO(CountryUtils.COUNTRY_ID2, null),
+                                LocalDate.of(1949, 1, 12),
+                                null,
+                                null
                         )
                 )
         );
@@ -319,7 +338,7 @@ public class AuthorControllerTest {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
 
-        UpdateAuthorDTO dto = new UpdateAuthorDTO(null, null, null, countryId);
+        UpdateAuthorDTO dto = new UpdateAuthorDTO(null, null, null, countryId, null);
 
         HttpEntity<UpdateAuthorDTO> httpEntity = new HttpEntity<>(dto, headers);
 
@@ -486,23 +505,34 @@ public class AuthorControllerTest {
 
     private static Stream<Arguments> findAllTest() {
         return Stream.of(
-                arguments(named("Поиск по фамилии", "СтО"), null, null, null, 2),
-                arguments(named("Поиск по имени", "а"), null, null, null, 5),
-                arguments(named("Поиск по отчеству", "ОвИч"), null, null, null, 2),
-                arguments(named("Поиск по полному фио", "Сергеевич Пушкин Александр"), null, null, null, 1),
-                arguments(named("Поиск по краткому фио", "А С Пушкин"), null, null, null, 1),
-                arguments(named("Поиск по стране", null), "ИТАЙ", null, null, 2),
-                arguments(named("Поиск с пустыми названиями", ""), "", null, null, 7),
-                arguments(named("Поиск без названий", null), null, null, null, 7),
-                arguments(named("Пагинация 1", null), null, 1, 3, 3),
-                arguments(named("Пагинация 2", null), null, 0, 4, 4)
+                arguments(named("Поиск по фамилии", "СтО"), null, null, null, null, null, 2),
+                arguments(named("Поиск по имени", "а"), null, null, null, null, null, 5),
+                arguments(named("Поиск по отчеству", "ОвИч"), null, null, null, null, null, 2),
+                arguments(named("Поиск по полному фио", "Сергеевич Пушкин Александр"), null, null, null, null, null, 1),
+                arguments(named("Поиск по краткому фио", "А С Пушкин"), null, null, null, null, null, 1),
+                arguments(named("Поиск по стране", null), "ИТАЙ", null, null, null, null, 2),
+                arguments(named("Поиск с пустыми названиями", ""), "", null, null, null, null, 7),
+                arguments(named("Поиск без названий", null), null, null, null, null, null, 7),
+                arguments(named("Поиск по дате рождения 1", null), null, LocalDate.of(1900, 2, 3), null, null, null, 2),
+                arguments(named("Поиск по дате рождения 2", null), null, null, LocalDate.of(1881, 9, 25), null, null, 5),
+                arguments(named("Поиск по дате рождения 3", null), null, LocalDate.of(1860, 1, 29),  LocalDate.of(2010, 11, 25), null, null, 4),
+                arguments(named("Пагинация 1", null), null, null, null, 1, 3, 3),
+                arguments(named("Пагинация 2", null), null, null, null, 0, 4, 4)
         );
     }
 
     @MethodSource
     @ParameterizedTest(name = "{0}")
     @DisplayName("Получение списка авторов с фильтрами")
-    void findAllTest(String fio, String countryName, Integer page, Integer perPage, long expectedSize) {
+    void findAllTest(
+            String fio,
+            String countryName,
+            LocalDate startBirthday,
+            LocalDate endBirthday,
+            Integer page,
+            Integer perPage,
+            long expectedSize
+    ) {
         String token = jwtService.generateToken(UserUtils.USER, secretKey);
 
         var urlBuilder = UrlUtils.builder(BASE_URL);
@@ -515,6 +545,10 @@ public class AuthorControllerTest {
             urlBuilder.add("page", page);
         if (perPage != null)
             urlBuilder.add("per_page", perPage);
+        if (startBirthday != null)
+            urlBuilder.add("start_birthday", startBirthday);
+        if (endBirthday != null)
+            urlBuilder.add("end_birthday", endBirthday);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

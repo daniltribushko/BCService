@@ -1,8 +1,10 @@
 package ru.tdd.bc.book.database.entities;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import ru.tdd.bc.database.entity.BaseEntity;
+import ru.tdd.bc.database.validators.annotations.NotBlankSize;
 import ru.tdd.bc.dictionaries.Dictionary;
 
 import java.util.UUID;
@@ -16,6 +18,8 @@ import java.util.UUID;
 @Table(name = "genre")
 public class Genre extends BaseEntity implements Dictionary {
 
+    @NotBlankSize
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
 
     public Genre() {}

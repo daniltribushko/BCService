@@ -6,9 +6,9 @@ import ru.tdd.bc.dto.ListData;
 /**
  * @author Tribushko Danil
  * @since 21.02.2026
- * DTO списка пользователей
+ * DTO списка авторов с подробной информацией
  */
-@Schema(description = "Список авторов")
+@Schema(description = "Список авторов с детальной информацией")
 public class AuthorListDTO extends ListData<AuthorDTO> {
 
     public static Builder builder() {
@@ -16,9 +16,10 @@ public class AuthorListDTO extends ListData<AuthorDTO> {
     }
 
     public static class Builder extends ListData.Builder<AuthorListDTO, AuthorDTO> {
+
         @Override
         public AuthorListDTO build() {
-            return super.build(new AuthorListDTO());
+            return build(new AuthorListDTO());
         }
     }
 }

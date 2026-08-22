@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.tdd.bc.book.application.exceptions.GenreAlreadyExistsException;
 import ru.tdd.bc.book.application.mappers.GenreMapper;
 import ru.tdd.bc.book.application.services.GenreService;
@@ -24,6 +25,7 @@ import java.util.UUID;
  * @since 08.08.2026
  */
 @Service
+@Transactional(readOnly = true)
 public class GenreServiceImp implements GenreService {
 
     private final GenreMapper genreMapper;
@@ -44,6 +46,7 @@ public class GenreServiceImp implements GenreService {
     }
 
     @Override
+    @Transactional
     public DictionaryDto create(CreateDictionaryDto dto) {
         Genre genre = genreMapper.toEntity(dto);
 
@@ -55,6 +58,7 @@ public class GenreServiceImp implements GenreService {
     }
 
     @Override
+    @Transactional
     public DictionaryDto update(UUID id, UpdateDictionaryDto dto) {
         Genre genre = genreDbService.getById(id);
         String newName = dto.getName();
@@ -78,6 +82,7 @@ public class GenreServiceImp implements GenreService {
     }
 
     @Override
+    @Transactional
     public void delete(UUID id) {
         Genre genre = genreDbService.getById(id);
         genreRepository.delete(genre);

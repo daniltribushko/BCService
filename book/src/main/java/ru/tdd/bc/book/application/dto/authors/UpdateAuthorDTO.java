@@ -2,6 +2,7 @@ package ru.tdd.bc.book.application.dto.authors;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -43,13 +44,22 @@ public class UpdateAuthorDTO {
     )
     private UUID countryId;
 
+    @Schema(
+            name = "birthday",
+            description = "Дата рождения",
+            type = "string",
+            format = "date"
+    )
+    private LocalDate birthday;
+
     public UpdateAuthorDTO() {}
 
-    public UpdateAuthorDTO(String lastName, String middleName, String firstName, UUID countryId) {
+    public UpdateAuthorDTO(String lastName, String middleName, String firstName, UUID countryId, LocalDate birthday) {
         this.lastName = lastName;
         this.middleName = middleName;
         this.firstName = firstName;
         this.countryId = countryId;
+        this.birthday = birthday;
     }
 
     public String getLastName() {
@@ -82,6 +92,14 @@ public class UpdateAuthorDTO {
 
     public void setCountryId(UUID countryId) {
         this.countryId = countryId;
+    }
+
+    public LocalDate getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(LocalDate birthday) {
+        this.birthday = birthday;
     }
 }
 

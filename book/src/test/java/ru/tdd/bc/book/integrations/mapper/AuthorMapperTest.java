@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Import;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.bc.book.TestcontainersConfiguration;
 import ru.tdd.bc.book.application.dto.authors.AuthorDTO;
-import ru.tdd.bc.book.application.dto.authors.AuthorDetailsDTO;
 import ru.tdd.bc.book.application.mappers.AuthorMapper;
 import ru.tdd.bc.book.database.entities.Author;
 import ru.tdd.bc.book.database.entities.Country;
@@ -50,7 +49,8 @@ public class AuthorMapperTest {
                         "Иванов",
                         null,
                         "Иван",
-                        country
+                        country,
+                        LocalDate.of(1999, 1, 1)
                 )
         );
 
@@ -58,6 +58,7 @@ public class AuthorMapperTest {
         Assertions.assertNull(actual.getMiddleName());
         Assertions.assertEquals("Иван", actual.getFirstName());
         Assertions.assertEquals(country.getId(), actual.getCountry().getId());
+        Assertions.assertEquals(LocalDate.of(1999, 1, 1), actual.getBirthday());
     }
 
     @Test
@@ -69,12 +70,13 @@ public class AuthorMapperTest {
                 "Иванов",
                 null,
                 "Иван",
-                country
+                country,
+                LocalDate.of(1999, 1, 1)
         );
 
         author.setUpdateTime(LocalDateTime.now());
 
-        AuthorDetailsDTO actual = authorMapper.toDetailsDto(
+        AuthorDTO actual = authorMapper.toDetailsDto(
                 author
         );
 
@@ -84,5 +86,6 @@ public class AuthorMapperTest {
         Assertions.assertEquals(country.getId(), actual.getCountry().getId());
         Assertions.assertEquals(LocalDate.now(), actual.getCreationTime().toLocalDate());
         Assertions.assertEquals(LocalDate.now(), actual.getUpdateTime().toLocalDate());
+        Assertions.assertEquals(LocalDate.of(1999, 1, 1), actual.getBirthday());
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tdd.bc.book.application.dto.authors.*;
+import ru.tdd.bc.book.application.exceptions.AuthorAlreadyExistsException;
 import ru.tdd.bc.book.application.exceptions.AuthorByIdNotFoundException;
 import ru.tdd.bc.book.application.mappers.AuthorMapper;
 import ru.tdd.bc.book.application.redis.CountryRedisService;
@@ -16,6 +17,7 @@ import ru.tdd.bc.book.database.repositories.AuthorRepository;
 import ru.tdd.bc.book.database.specifications.AuthorSpecification;
 import ru.tdd.bc.utils.TextUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -52,12 +54,20 @@ public class AuthorServiceImp implements AuthorService {
 
         Country country = countryService.get(countryId);
 
-        Author author = new Author(
-                dto.getLastName(),
-                dto.getMiddleName(),
-                dto.getFirstName(),
-                country
-        );
+        Author author = authorMapper.toEntity(dto);
+        author.setCountry(country);
+
+        if (
+                authorRepository.exists(
+                        AuthorSpecification.byLastNameFirstNameBirthdayCountryId(
+                                author.getLastName(),
+                                author.getFirstName(),
+                                author.getBirthday(),
+                                countryId
+                        )
+                )
+        )
+            throw new AuthorAlreadyExistsException();
 
         authorRepository.save(author);
 
@@ -82,7 +92,7 @@ public class AuthorServiceImp implements AuthorService {
             isUpdate = true;
         }
 
-        if (!Objects.equals(author.getMiddleName(), middleName)) {
+        if (!Objects.equals(middleName, "") && !Objects.equals(author.getMiddleName(), middleName)) {
             author.setMiddleName(middleName);
             isUpdate = true;
         }
@@ -105,7 +115,7 @@ public class AuthorServiceImp implements AuthorService {
     }
 
     @Override
-    public AuthorDetailsDTO getById(UUID id) {
+    public AuthorDTO getById(UUID id) {
         Author author = authorRepository.findById(id)
                 .orElseThrow(AuthorByIdNotFoundException::new);
         return authorMapper.toDetailsDto(author);
@@ -121,29 +131,11 @@ public class AuthorServiceImp implements AuthorService {
     }
 
     @Override
-    public AuthorListDTO getAll(String fio, String countryName, int page, int perPage) {
-        Page<Author> authorPage = authorRepository.findAll(
-                AuthorSpecification.byFioAndCountryNameDate(fio, countryName),
-                PageRequest.of(page, perPage)
-        );
-
-        return AuthorListDTO.builder()
-                .data(
-                        authorPage.stream()
-                                .map(authorMapper::toDto)
-                                .toList()
-                )
-                .totalPages(authorPage.getTotalPages())
-                .totalCount(authorPage.getTotalElements())
-                .count(authorPage.getSize())
-                .page(authorPage.getNumber())
-                .build();
-    }
-
-    @Override
-    public AuthorDetailsListDTO getAllDetails(
+    public AuthorListDTO getAll(
             String fio,
             String countryName,
+            LocalDate startBirthday,
+            LocalDate endBirthday,
             LocalDateTime creationTimeStart,
             LocalDateTime creationTimeEnd,
             LocalDateTime updateTimeStart,
@@ -152,9 +144,11 @@ public class AuthorServiceImp implements AuthorService {
             int perPage
     ) {
         Page<Author> authorPage = authorRepository.findAll(
-                AuthorSpecification.byFioAndCountryNameAndVersionsDate(
+                AuthorSpecification.byFioAndCountryNameAndBirthdayAndVersionsDate(
                         fio,
                         countryName,
+                        startBirthday,
+                        endBirthday,
                         creationTimeStart,
                         creationTimeEnd,
                         updateTimeStart,
@@ -163,7 +157,7 @@ public class AuthorServiceImp implements AuthorService {
                 PageRequest.of(page, perPage)
         );
 
-        return AuthorDetailsListDTO.builder()
+        return AuthorListDTO.builder()
                 .data(
                         authorPage.stream()
                                 .map(authorMapper::toDetailsDto)

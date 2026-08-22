@@ -3,6 +3,7 @@ package ru.tdd.bc.book.database.entities;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import ru.tdd.bc.database.validators.annotations.NotBlankSize;
 import ru.tdd.bc.dictionaries.entities.NameEntity;
 import ru.tdd.kafka_core.entities.KafkaEntity;
 
@@ -17,7 +18,8 @@ import java.util.UUID;
 @Table(name = "country")
 public class Country extends KafkaEntity implements NameEntity {
 
-    @Column(name = "name")
+    @NotBlankSize
+    @Column(name = "name", nullable = false)
     private String name;
 
     public Country() {}

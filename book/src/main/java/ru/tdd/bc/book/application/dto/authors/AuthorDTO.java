@@ -1,16 +1,19 @@
 package ru.tdd.bc.book.application.dto.authors;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Past;
 import ru.tdd.bc.book.application.dto.countries.CountryDTO;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
  * @author Tribushko Danil
- * @since 19.02.2026
- * DTO автора книги
+ * @since 21.02.2026
+ * Детальная информация автоа
  */
-@Schema(description = "DTO автора")
+@Schema(description = "Детальная информация об авторе")
 public class AuthorDTO {
 
     @Schema(
@@ -33,7 +36,7 @@ public class AuthorDTO {
 
     @Schema(
             name = "middleName",
-            description = "Отчество автора",
+            description = "Отчество автоа",
             type = "string",
             example = "Иванович",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
@@ -57,14 +60,53 @@ public class AuthorDTO {
     )
     private CountryDTO country;
 
-    public AuthorDTO() {}
+    @Schema(
+            name = "birthday",
+            description = "Дата рождения пользователя",
+            type = "string",
+            format = "date"
+    )
+    @Past(message = "Дата рождения автора должна быть в прошедшем времени")
+    private LocalDate birthday;
 
-    public AuthorDTO(UUID id, String lastName, String middleName, String firstName, CountryDTO country) {
+    @Schema(
+            name = "creationTime",
+            description = "Время создания автора",
+            type = "string",
+            format = "date-time",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    private LocalDateTime creationTime;
+
+    @Schema(
+            name = "updateTime",
+            description = "Время обновления последнего автора",
+            type = "string",
+            format = "date-time",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    private LocalDateTime updateTime;
+
+    public AuthorDTO(){}
+
+    public AuthorDTO(
+            UUID id,
+            String lastName,
+            String middleName,
+            String firstName,
+            CountryDTO country,
+            LocalDate birthday,
+            LocalDateTime creationTime,
+            LocalDateTime updateTime
+    ) {
         this.id = id;
         this.lastName = lastName;
+        this.country = country;
         this.middleName = middleName;
         this.firstName = firstName;
-        this.country = country;
+        this.birthday = birthday;
+        this.creationTime = creationTime;
+        this.updateTime = updateTime;
     }
 
     public UUID getId() {
@@ -106,4 +148,29 @@ public class AuthorDTO {
     public void setCountry(CountryDTO country) {
         this.country = country;
     }
+
+    public LocalDateTime getCreationTime() {
+        return creationTime;
+    }
+
+    public void setCreationTime(LocalDateTime creationTime) {
+        this.creationTime = creationTime;
+    }
+
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
+    }
+
+    public LocalDate getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(LocalDate birthday) {
+        this.birthday = birthday;
+    }
 }
+

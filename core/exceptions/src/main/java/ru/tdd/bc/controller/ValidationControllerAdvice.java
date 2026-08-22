@@ -1,16 +1,14 @@
 package ru.tdd.bc.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ru.tdd.bc.dto.ExceptionDto;
+import ru.tdd.bc.dto.ValidationError;
+import ru.tdd.bc.dto.ValidationExceptionDTO;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author Tribushko Danil
@@ -20,29 +18,19 @@ import java.util.Map;
 @RestControllerAdvice
 public class ValidationControllerAdvice {
 
-    private final ObjectMapper objectMapper;
-
-    public ValidationControllerAdvice(
-            ObjectMapper objectMapper
-    ) {
-        this.objectMapper = objectMapper;
-    }
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ExceptionDto> handleMethodArgumentNotValidException(
+    public ResponseEntity<ValidationExceptionDTO> handleMethodArgumentNotValidException(
             MethodArgumentNotValidException ex
-    ) throws Exception {
-        Map<String, String> errors = new HashMap<>();
-
-        ex.getBindingResult().getFieldErrors().forEach(fieldError ->
-                errors.put(fieldError.getField(), fieldError.getDefaultMessage())
-        );
+    ) {
+        var errors = ex.getBindingResult().getFieldErrors().stream().map(fieldError ->
+                new ValidationError(fieldError.getField(), fieldError.getDefaultMessage())
+        ).toList();
 
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(
-                        new ExceptionDto(
+                        new ValidationExceptionDTO(
                                 HttpStatus.UNPROCESSABLE_ENTITY,
-                                objectMapper.writeValueAsString(errors),
+                                errors,
                                 LocalDateTime.now()
                         )
                 );

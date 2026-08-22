@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.tdd.bc.book.TestcontainersConfiguration;
 import ru.tdd.bc.book.application.dto.authors.AuthorDTO;
-import ru.tdd.bc.book.application.dto.authors.AuthorDetailsDTO;
 import ru.tdd.bc.book.application.dto.authors.CreateAuthorDTO;
 import ru.tdd.bc.book.application.dto.authors.UpdateAuthorDTO;
 import ru.tdd.bc.book.application.dto.countries.CountryDTO;
@@ -25,8 +24,10 @@ import ru.tdd.bc.book.database.repositories.CountryRepository;
 import ru.tdd.bc.book.sql.InitAuthorsSqlScripts;
 import ru.tdd.bc.book.utils.AuthorUtils;
 import ru.tdd.bc.book.utils.CountryUtils;
+import ru.tdd.bc.dictionaries.dto.UpdateDictionaryDto;
 import ru.tdd.bc.http.countries.CountryByIdNotFoundException;
 
+import java.time.LocalDate;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -63,7 +64,8 @@ public class AuthorServiceTest {
                         "Иванов",
                         null,
                         "Иван",
-                        CountryUtils.COUNTRY_ID2
+                        CountryUtils.COUNTRY_ID2,
+                        null
                 )
         );
 
@@ -79,14 +81,18 @@ public class AuthorServiceTest {
                                 "Иванов",
                                 "Сергеевич",
                                 null,
-                                null
+                                null,
+                                LocalDate.of(1799, 6, 6)
                         ),
                         new AuthorDTO(
                                 AuthorUtils.AUTHOR_ID1,
                                 "Иванов",
                                 "Сергеевич",
                                 "Александр",
-                                new CountryDTO(CountryUtils.COUNTRY_ID1, null)
+                                new CountryDTO(CountryUtils.COUNTRY_ID1, null),
+                                LocalDate.of(1799, 6, 6),
+                                null,
+                                null
                         )
                 ),
                 arguments(
@@ -95,14 +101,18 @@ public class AuthorServiceTest {
                                 null,
                                 "Иванович",
                                 null,
-                                null
+                                null,
+                                LocalDate.of(1860, 1, 29)
                         ),
                         new AuthorDTO(
                                 AuthorUtils.AUTHOR_ID3,
                                 "Чехов",
                                 "Иванович",
                                 "Антон",
-                                new CountryDTO(CountryUtils.COUNTRY_ID1, null)
+                                new CountryDTO(CountryUtils.COUNTRY_ID1, null),
+                                LocalDate.of(1860, 1, 29),
+                                null,
+                                null
                         )
                 ),
                 arguments(
@@ -111,14 +121,18 @@ public class AuthorServiceTest {
                                 null,
                                 null,
                                 "Набунага",
-                                null
+                                null,
+                                LocalDate.of(1949, 1, 12)
                         ),
                         new AuthorDTO(
                                 AuthorUtils.AUTHOR_ID7,
                                 "Мураками",
                                 null,
                                 "Набунага",
-                                new CountryDTO(CountryUtils.COUNTRY_ID3, null)
+                                new CountryDTO(CountryUtils.COUNTRY_ID3, null),
+                                LocalDate.of(1949, 1, 12),
+                                null,
+                                null
                         )
                 ),
                 arguments(
@@ -127,14 +141,58 @@ public class AuthorServiceTest {
                                 null,
                                 null,
                                 null,
-                                CountryUtils.COUNTRY_ID3
+                                CountryUtils.COUNTRY_ID3,
+                                LocalDate.of(1955, 2, 17)
                         ),
                         new AuthorDTO(
                                 AuthorUtils.AUTHOR_ID6,
                                 "Мо",
                                 null,
                                 "Янь",
-                                new CountryDTO(CountryUtils.COUNTRY_ID3, null)
+                                new CountryDTO(CountryUtils.COUNTRY_ID3, null),
+                                LocalDate.of(1955, 2, 17),
+                                null,
+                                null
+                        )
+                ),
+                arguments(
+                        named("Обновление даты рождения", AuthorUtils.AUTHOR_ID7),
+                        new UpdateAuthorDTO(
+                                null,
+                                null,
+                                null,
+                                null,
+                                LocalDate.of(1950, 1, 1)
+                        ),
+                        new AuthorDTO(
+                                AuthorUtils.AUTHOR_ID7,
+                                "Мураками",
+                                null,
+                                "Харуки",
+                                new CountryDTO(CountryUtils.COUNTRY_ID3, null),
+                                LocalDate.of(1950, 1, 1),
+                                null,
+                                null
+                        )
+                ),
+                arguments(
+                        named("Удаление даты рождения", AuthorUtils.AUTHOR_ID7),
+                        new UpdateAuthorDTO(
+                                null,
+                                null,
+                                null,
+                                null,
+                                null
+                        ),
+                        new AuthorDTO(
+                                AuthorUtils.AUTHOR_ID7,
+                                "Мураками",
+                                null,
+                                "Харуки",
+                                new CountryDTO(CountryUtils.COUNTRY_ID3, null),
+                                null,
+                                null,
+                                null
                         )
                 )
         );
@@ -180,7 +238,8 @@ public class AuthorServiceTest {
                                 null,
                                 null,
                                 null,
-                                countryId
+                                countryId,
+                                null
                         )
                 )
         );
@@ -214,7 +273,7 @@ public class AuthorServiceTest {
     @Test
     @DisplayName("Удачное получение по идентификатору")
     void getByIdSuccessTest() {
-        AuthorDetailsDTO actual = authorService.getById(AuthorUtils.AUTHOR_ID4);
+        AuthorDTO actual = authorService.getById(AuthorUtils.AUTHOR_ID4);
 
         Assertions.assertEquals(AuthorUtils.AUTHOR_ID4, actual.getId());
     }

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.URL;
 import ru.tdd.bc.database.entity.EntityVersion;
+import ru.tdd.bc.database.validators.annotations.NotBlankSize;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,7 +20,7 @@ import java.util.UUID;
 @Table(name = "publisher", uniqueConstraints = @UniqueConstraint(columnNames = {"name", "country_id"}))
 public class Publisher extends EntityVersion {
 
-    @NotBlank
+    @NotBlankSize
     @Column(name = "name", nullable = false)
     private String name;
 

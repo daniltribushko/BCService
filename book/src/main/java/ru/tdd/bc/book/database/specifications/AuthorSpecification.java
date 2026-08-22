@@ -10,8 +10,10 @@ import ru.tdd.bc.book.database.entities.Country;
 import ru.tdd.bc.database.criteria.CriteriaHelper;
 import ru.tdd.bc.utils.TextUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * @author Tribushko Danil
@@ -86,9 +88,11 @@ public interface AuthorSpecification {
         };
     }
 
-    static Specification<Author> byFioAndCountryNameAndVersionsDate(
+    static Specification<Author> byFioAndCountryNameAndBirthdayAndVersionsDate(
             String fio,
             String countryName,
+            LocalDate startBirthday,
+            LocalDate endBirthday,
             LocalDateTime creationTimeStart,
             LocalDateTime creationTimeEnd,
             LocalDateTime updateTimeStart,
@@ -98,6 +102,7 @@ public interface AuthorSpecification {
             CriteriaHelper<Author> helper = new CriteriaHelper<>(root, cr, cb);
 
             Predicate authorPredicate = cb.and(getFioPredicate(helper, fio)
+                    .inDateRange("birthday", startBirthday, endBirthday)
                     .inDateRange("creationTime", creationTimeStart, creationTimeEnd)
                     .inDateRange("updateTime", updateTimeStart, updateTimeEnd)
                     .build()
@@ -122,6 +127,28 @@ public interface AuthorSpecification {
                         countryPredicates[1]
                 );
             }
+        };
+    }
+
+    static Specification<Author> byLastNameFirstNameBirthdayCountryId(
+            String lastName,
+            String firstName,
+            LocalDate birthday,
+            UUID countryId
+    ) {
+        return (root, cr, cb) -> {
+            var helper = new CriteriaHelper<>(root, cr, cb)
+                    .lowerEqual("lastName", lastName)
+                    .lowerEqual("firstName", firstName)
+                    .isNull("id")
+                    .equal(root.join("country").get("id"), countryId);
+
+            if (birthday == null)
+                helper.isNull("birthday");
+            else
+                helper.equal("birthday", birthday);
+
+            return cb.and(helper.build());
         };
     }
 }
